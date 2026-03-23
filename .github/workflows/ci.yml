@@ -1,0 +1,72 @@
+name: SSPMS CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend:
+    name: Backend — Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore packages
+        run: dotnet restore SSPMS.slnx
+
+      - name: Build
+        run: dotnet build SSPMS.slnx --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test SSPMS.slnx --no-build --configuration Release --verbosity normal
+
+  frontend:
+    name: Frontend — Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build
+        run: npm run build -- --configuration production
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+  notify:
+    name: Notify PR Status
+    needs: [backend, frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          backend="${{ needs.backend.result }}"
+          frontend="${{ needs.frontend.result }}"
+          echo "Backend: $backend | Frontend: $frontend"
+          if [[ "$backend" == "success" && "$frontend" == "success" ]]; then
+            echo "✅ All checks passed"
+          else
+            echo "❌ Some checks failed"
+            exit 1
+          fi
