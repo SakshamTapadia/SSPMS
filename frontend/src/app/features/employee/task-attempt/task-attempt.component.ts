@@ -7,7 +7,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { SubmissionDto, QuestionDto } from '../../../core/models';
 import { interval, Subscription } from 'rxjs';
 
-export type ProctorState = 'requesting' | 'denied' | 'ready' | 'in-progress';
+export type ProctorState = 'requesting' | 'denied' | 'permissions-granted' | 'in-progress';
 
 @Component({ selector: 'app-task-attempt', standalone: false, templateUrl: './task-attempt.component.html', styleUrl: './task-attempt.component.scss' })
 export class TaskAttemptComponent implements OnInit, OnDestroy {
@@ -42,10 +42,10 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     this.taskId = this.route.snapshot.paramMap.get('id')!;
-    await this.initProctoring();
+    await this.requestPermissions();
   }
 
-  async initProctoring(): Promise<void> {
+  async requestPermissions(): Promise<void> {
     this.proctorState = 'requesting';
     const result = await this.proctor.requestPermissions();
     if (!result.granted) {
@@ -53,14 +53,23 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
       this.proctorError = result.error ?? 'Camera and microphone access are required to begin.';
       return;
     }
+    // Permissions granted — wait for user to click "Begin" to trigger fullscreen (requires user gesture)
+    this.proctorState = 'permissions-granted';
+  }
 
+  /** Called when user clicks "Begin Assessment" button — this IS a user gesture so fullscreen works */
+  async beginAssessment(): Promise<void> {
     try {
       await this.proctor.enterFullscreen();
     } catch {
-      // Fullscreen requires a user gesture in some browsers; proceed and warn.
+      // Fullscreen denied by browser — continue anyway with a warning
+      this.snack.open('Fullscreen could not be entered. Exiting fullscreen will be recorded as a violation.', 'OK', { duration: 5000 });
     }
+    this.attachProctorListeners();
+    this.loadSubmission();
+  }
 
-    // Fullscreen exit listener
+  private attachProctorListeners(): void {
     this.fullscreenCleanup = this.proctor.onFullscreenChange(() => {
       if (!this.proctor.isFullscreen()) {
         this.proctor.violationCount++;
@@ -77,11 +86,9 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Tab/screen switch listener
     this.visibilityCleanup = this.proctor.onVisibilityChange(() => {
       const count = this.proctor.recordTabSwitch();
       const remaining = this.maxTabSwitches - count;
-
       if (remaining > 0) {
         this.snack.open(
           `Warning: screen switched (${count}/${this.maxTabSwitches}). ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining before auto-submit.`,
@@ -89,13 +96,9 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
           { duration: 6000 }
         );
       } else {
-        // 3rd switch — malpractice
         this.triggerMalpracticeSubmit(count);
       }
     });
-
-    this.proctorState = 'ready';
-    this.loadSubmission();
   }
 
   private loadSubmission(): void {
@@ -144,6 +147,10 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
 
   get tabSwitchCount(): number { return this.proctor.tabSwitchCount; }
   get tabSwitchesRemaining(): number { return Math.max(0, this.maxTabSwitches - this.tabSwitchCount); }
+
+  isValidUrl(val: string): boolean {
+    try { new URL(val); return true; } catch { return false; }
+  }
 
   saveDraft(): void {
     if (!this.submission) return;

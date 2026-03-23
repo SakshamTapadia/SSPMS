@@ -134,6 +134,19 @@
   color: var(--c-text-3) !important;
 }
 
+.begin-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--g-primary); color: #fff;
+  border: none; cursor: pointer;
+  padding: 12px 32px; border-radius: var(--radius-md);
+  font-size: 1rem; font-weight: 700;
+  box-shadow: 0 4px 16px rgba(79,70,229,0.38);
+  transition: all 0.18s;
+  mat-icon { font-size: 20px; }
+  &:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,70,229,0.5); }
+  &:active { transform: translateY(0); }
+}
+
 // ── Violation banner ───────────────────────────────────────────────
 .violation-banner {
   display: flex; align-items: center; gap: 10px;

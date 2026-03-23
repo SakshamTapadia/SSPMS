@@ -68,3 +68,42 @@ public record ClassVelocityReport(
     string ClassName,
     List<EmployeeVelocityDto> Employees
 );
+
+// ── Results Grid (Wayground-style overview) ────────────────
+public record TaskResultsGrid(
+    Guid TaskId,
+    string TaskTitle,
+    int TotalEnrolled,
+    int TotalParticipants,
+    double OverallAccuracy,       // 0–100
+    double ParticipationRate,     // 0–100
+    int QuestionCount,
+    List<GridQuestionHeader> Questions,
+    List<GridParticipantRow> Participants
+);
+
+public record GridQuestionHeader(
+    Guid QuestionId,
+    int OrderIndex,
+    string Stem,
+    string Type,
+    int Marks,
+    double AccuracyPercent        // % of participants who got this correct
+);
+
+public record GridParticipantRow(
+    Guid EmployeeId,
+    string EmployeeName,
+    int TotalPoints,
+    int TotalMarks,
+    double AccuracyPercent,
+    long Score,
+    List<GridAnswerCell> Answers
+);
+
+public record GridAnswerCell(
+    Guid QuestionId,
+    bool? IsCorrect,             // null = not answered / subjective
+    double? RawScore,
+    double? MaxScore
+);

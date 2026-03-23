@@ -14,22 +14,26 @@ public class EmailService : IEmailService
     public async Task SendAsync(string to, string subject, string htmlBody)
     {
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress("SSPMS", _config["Email:From"]));
+        message.From.Add(new MailboxAddress(_config["Email:DisplayName"] ?? "SSPMS", _config["Email:From"]));
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
         message.Body = new TextPart("html") { Text = WrapTemplate(subject, htmlBody) };
 
         using var client = new SmtpClient();
-        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(30));
         await client.ConnectAsync(_config["Email:SmtpHost"], int.Parse(_config["Email:SmtpPort"] ?? "587"), MailKit.Security.SecureSocketOptions.StartTls, cts.Token);
-        await client.AuthenticateAsync(_config["Email:From"], _config["Email:Password"], cts.Token);
-        await client.SendAsync(message);
+        await client.AuthenticateAsync(_config["Email:SmtpUsername"], _config["Email:Password"], cts.Token);
+        await client.SendAsync(message, cts.Token);
         await client.DisconnectAsync(true);
     }
 
     public Task SendWelcomeEmailAsync(string to, string name, string tempPassword) =>
         SendAsync(to, "Welcome to SSPMS — Your Account is Ready",
             $"<h2>Welcome, {name}!</h2><p>Your account has been created on the SmartSkill Performance Monitoring System.</p><p><strong>Email:</strong> {to}<br/><strong>Temporary Password:</strong> {tempPassword}</p><p>Please log in and change your password immediately.</p>");
+
+    public Task SendEmailVerificationOtpAsync(string to, string name, string otp) =>
+        SendAsync(to, "SSPMS — Verify Your Email Address",
+            $"<h2>Verify Your Email</h2><p>Hi {name},</p><p>Welcome to SSPMS! Please verify your email address using the code below:</p><p style='text-align:center'><strong style='font-size:32px;letter-spacing:6px;color:#4f46e5'>{otp}</strong></p><p>This code expires in 15 minutes. If you did not create an account, ignore this email.</p>");
 
     public Task SendOtpEmailAsync(string to, string name, string otp) =>
         SendAsync(to, "SSPMS — Password Reset OTP",

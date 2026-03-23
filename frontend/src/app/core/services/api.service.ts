@@ -11,7 +11,8 @@ import {
   LeaderboardEntry, BadgeDto, EmployeeBadgeDto, XPSummaryDto, DashboardStatsDto,
   ClassReportDto, EmployeeReportDto,
   NotificationDto, AnnouncementDto,
-  TaskBlindSpotReport, CodeSimilarityReport, EmployeeVelocityDto, ClassVelocityReport
+  TaskBlindSpotReport, CodeSimilarityReport, EmployeeVelocityDto, ClassVelocityReport,
+  TaskResultsGrid
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -126,6 +127,7 @@ export class ApiService {
   // ── Analytics ────────────────────────────────────────
   getTaskBlindSpots(taskId: string): Observable<TaskBlindSpotReport> { return this.http.get<TaskBlindSpotReport>(`${this.base}/analytics/task/${taskId}/blind-spots`); }
   getCodeSimilarity(taskId: string): Observable<CodeSimilarityReport> { return this.http.get<CodeSimilarityReport>(`${this.base}/analytics/task/${taskId}/code-similarity`); }
+  getTaskResultsGrid(taskId: string): Observable<TaskResultsGrid> { return this.http.get<TaskResultsGrid>(`${this.base}/analytics/task/${taskId}/results-grid`); }
   getEmployeeVelocity(employeeId: string): Observable<EmployeeVelocityDto> { return this.http.get<EmployeeVelocityDto>(`${this.base}/analytics/employee/${employeeId}/velocity`); }
   getClassVelocity(classId: string): Observable<ClassVelocityReport> { return this.http.get<ClassVelocityReport>(`${this.base}/analytics/class/${classId}/velocity`); }
 

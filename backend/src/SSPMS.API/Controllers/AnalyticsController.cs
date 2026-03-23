@@ -41,4 +41,12 @@ public class AnalyticsController : BaseController
         var result = await _analytics.GetClassVelocityAsync(classId);
         return Ok(result);
     }
+
+    [HttpGet("task/{taskId:guid}/results-grid")]
+    [Authorize(Roles = "Admin,Trainer")]
+    public async Task<IActionResult> GetTaskResultsGrid(Guid taskId)
+    {
+        var result = await _analytics.GetTaskResultsGridAsync(taskId);
+        return Ok(result);
+    }
 }

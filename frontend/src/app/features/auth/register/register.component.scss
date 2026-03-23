@@ -4,6 +4,29 @@
   background: #f0f2f9;
 }
 
+.divider {
+  display: flex; align-items: center; gap: 12px; margin: 12px 0;
+  &::before, &::after { content: ''; flex: 1; border-top: 1px solid var(--c-border); }
+  span { font-size: 0.75rem; color: var(--c-text-3); font-weight: 500; white-space: nowrap; }
+}
+
+.google-btn-container {
+  display: flex; justify-content: center; margin-bottom: 4px;
+}
+
+.otp-footer {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 12px; font-size: 0.875rem; color: var(--c-text-3);
+}
+.dot-sep { color: var(--c-text-3); }
+.link-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--c-primary); font-weight: 600; font-size: 0.875rem;
+  padding: 0;
+  &:hover { text-decoration: underline; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
 .login-panel {
   flex: 0 0 480px;
   display: flex; align-items: center; justify-content: center;

@@ -2,6 +2,7 @@
 export interface LoginRequest { email: string; password: string; totpCode?: string; }
 export interface AuthResponse { accessToken: string; refreshToken: string; expiresIn: number; user: UserProfile; }
 export interface UserProfile { id: string; name: string; email: string; role: 'Admin' | 'Trainer' | 'Employee'; avatarUrl?: string; isTwoFactorEnabled: boolean; }
+export interface AuthCheckResponse { requiresVerification?: boolean; email?: string; accessToken?: string; refreshToken?: string; expiresIn?: number; user?: UserProfile; }
 
 // ── Users ────────────────────────────────────────────────
 export interface UserDto { id: string; name: string; email: string; role: string; avatarUrl?: string; isActive: boolean; createdAt: string; classId?: string; className?: string; }
@@ -55,6 +56,12 @@ export interface AnnouncementDto { id: string; classId: string; className: strin
 // ── Pagination ───────────────────────────────────────────
 export interface PagedResult<T> { items: T[]; totalCount: number; page: number; pageSize: number; totalPages: number; }
 export interface ApiError { message: string; errors?: Record<string, string[]>; }
+
+// ── Results Grid ─────────────────────────────────────────
+export interface GridQuestionHeader { questionId: string; orderIndex: number; stem: string; type: string; marks: number; accuracyPercent: number; }
+export interface GridAnswerCell { questionId: string; isCorrect: boolean | null; rawScore: number | null; maxScore: number | null; }
+export interface GridParticipantRow { employeeId: string; employeeName: string; totalPoints: number; totalMarks: number; accuracyPercent: number; score: number; answers: GridAnswerCell[]; }
+export interface TaskResultsGrid { taskId: string; taskTitle: string; totalEnrolled: number; totalParticipants: number; overallAccuracy: number; participationRate: number; questionCount: number; questions: GridQuestionHeader[]; participants: GridParticipantRow[]; }
 
 // ── Analytics ────────────────────────────────────────────
 export interface ScoreDataPoint { taskId: string; taskTitle: string; submittedAt: string; finalScore: number; totalMarks: number; }

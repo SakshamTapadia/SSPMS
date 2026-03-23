@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Google.Apis.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -30,26 +31,30 @@ public class AuthService : IAuthService
         _audit = audit;
     }
 
-    public async Task<ServiceResult<AuthResponse>> RegisterAsync(RegisterRequest request, string ipAddress)
+    public async Task<ServiceResult<RegisterResponse>> RegisterAsync(RegisterRequest request, string ipAddress)
     {
-        var emailLower = request.Email.ToLower();
+        var emailLower = request.Email.ToLower().Trim();
         if (await _db.Users.AnyAsync(u => u.Email == emailLower))
-            return ServiceResult<AuthResponse>.Failure("An account with this email already exists.");
+            return ServiceResult<RegisterResponse>.Failure("An account with this email already exists.");
 
         var user = new User
         {
-            Name = request.Name,
+            Name = request.Name.Trim(),
             Email = emailLower,
             PasswordHash = BC.HashPassword(request.Password),
             Role = Domain.Enums.UserRole.Employee,
-            IsActive = true
+            IsActive = true,
+            IsEmailVerified = false
         };
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        var response = await GenerateAuthResponseAsync(user, ipAddress);
+        // Send verification OTP
+        await SendVerificationOtpAsync(user);
         await _audit.LogAsync(user.Id, "Register.Success", ipAddress: ipAddress);
-        return ServiceResult<AuthResponse>.Success(response);
+
+        return ServiceResult<RegisterResponse>.Success(
+            new RegisterResponse(RequiresEmailVerification: true, Email: emailLower, AuthData: null));
     }
 
     public async Task<ServiceResult<AuthResponse>> LoginAsync(LoginRequest request, string ipAddress)
@@ -59,6 +64,13 @@ public class AuthService : IAuthService
         {
             await _audit.LogAsync(null, "Login.Failed", ipAddress: ipAddress);
             return ServiceResult<AuthResponse>.Failure("Invalid email or password.");
+        }
+
+        if (!user.IsEmailVerified)
+        {
+            // Resend OTP silently
+            await SendVerificationOtpAsync(user);
+            return ServiceResult<AuthResponse>.Failure("EMAIL_NOT_VERIFIED");
         }
 
         if (user.TwoFAEnabled)
@@ -71,6 +83,95 @@ public class AuthService : IAuthService
 
         var response = await GenerateAuthResponseAsync(user, ipAddress);
         await _audit.LogAsync(user.Id, "Login.Success", ipAddress: ipAddress);
+        return ServiceResult<AuthResponse>.Success(response);
+    }
+
+    public async Task<ServiceResult<AuthResponse>> VerifyEmailAsync(string email, string otp)
+    {
+        var emailLower = email.ToLower().Trim();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == emailLower);
+        if (user == null) return ServiceResult<AuthResponse>.Failure("Invalid request.");
+
+        var otps = await _db.PasswordResetOTPs
+            .Where(o => o.UserId == user.Id && !o.IsUsed && o.ExpiresAt > DateTime.UtcNow)
+            .ToListAsync();
+
+        var validOtp = otps.FirstOrDefault(o => BC.Verify(otp, o.OTPHash));
+        if (validOtp == null) return ServiceResult<AuthResponse>.Failure("Invalid or expired verification code.");
+
+        user.IsEmailVerified = true;
+        validOtp.IsUsed = true;
+
+        // Mark remaining OTPs as used
+        foreach (var o in otps.Where(o => o.Id != validOtp.Id)) o.IsUsed = true;
+
+        await _db.SaveChangesAsync();
+
+        var response = await GenerateAuthResponseAsync(user, "verify");
+        return ServiceResult<AuthResponse>.Success(response);
+    }
+
+    public async Task<ServiceResult> ResendEmailVerificationAsync(string email)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email.ToLower() && u.IsActive && !u.IsEmailVerified);
+        if (user == null) return ServiceResult.Success(); // Don't reveal if email exists
+        await SendVerificationOtpAsync(user);
+        return ServiceResult.Success();
+    }
+
+    public async Task<ServiceResult<AuthResponse>> GoogleLoginAsync(string idToken, string ipAddress)
+    {
+        var clientId = _config["Google:ClientId"];
+        if (string.IsNullOrEmpty(clientId))
+            return ServiceResult<AuthResponse>.Failure("Google login is not configured.");
+
+        GoogleJsonWebSignature.Payload payload;
+        try
+        {
+            var settings = new GoogleJsonWebSignature.ValidationSettings { Audience = [clientId] };
+            payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
+        }
+        catch
+        {
+            return ServiceResult<AuthResponse>.Failure("Invalid Google token.");
+        }
+
+        var emailLower = payload.Email.ToLower().Trim();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == emailLower);
+
+        if (user == null)
+        {
+            // Auto-register via Google — email is already verified by Google
+            user = new User
+            {
+                Name = payload.Name ?? emailLower,
+                Email = emailLower,
+                PasswordHash = BC.HashPassword(Guid.NewGuid().ToString()), // unusable random password
+                Role = Domain.Enums.UserRole.Employee,
+                IsActive = true,
+                IsEmailVerified = true,
+                GoogleId = payload.Subject,
+                AvatarUrl = payload.Picture
+            };
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync();
+            await _audit.LogAsync(user.Id, "Register.Google", ipAddress: ipAddress);
+        }
+        else
+        {
+            if (!user.IsActive)
+                return ServiceResult<AuthResponse>.Failure("Account is deactivated.");
+
+            // Update Google ID and avatar if not already set
+            if (string.IsNullOrEmpty(user.GoogleId)) user.GoogleId = payload.Subject;
+            if (string.IsNullOrEmpty(user.AvatarUrl) && !string.IsNullOrEmpty(payload.Picture))
+                user.AvatarUrl = payload.Picture;
+            user.IsEmailVerified = true;
+            await _db.SaveChangesAsync();
+        }
+
+        var response = await GenerateAuthResponseAsync(user, ipAddress);
+        await _audit.LogAsync(user.Id, "Login.Google", ipAddress: ipAddress);
         return ServiceResult<AuthResponse>.Success(response);
     }
 
@@ -107,6 +208,12 @@ public class AuthService : IAuthService
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email.ToLower() && u.IsActive);
         if (user == null) return ServiceResult.Success(); // Don't reveal if email exists
+
+        // Clean up expired OTPs
+        var expired = await _db.PasswordResetOTPs
+            .Where(o => o.UserId == user.Id && (o.IsUsed || o.ExpiresAt <= DateTime.UtcNow))
+            .ToListAsync();
+        _db.PasswordResetOTPs.RemoveRange(expired);
 
         var otp = GenerateOtp();
         var otpHash = BC.HashPassword(otp);
@@ -205,12 +312,32 @@ public class AuthService : IAuthService
         return ServiceResult.Success();
     }
 
-    // Helpers
+    // ── Private Helpers ───────────────────────────────────────────────────────
+
+    private async Task SendVerificationOtpAsync(User user)
+    {
+        // Clean up old OTPs for this user
+        var old = await _db.PasswordResetOTPs
+            .Where(o => o.UserId == user.Id && !o.IsUsed)
+            .ToListAsync();
+        _db.PasswordResetOTPs.RemoveRange(old);
+
+        var otp = GenerateOtp();
+        _db.PasswordResetOTPs.Add(new PasswordResetOTP
+        {
+            UserId = user.Id,
+            OTPHash = BC.HashPassword(otp),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(15)
+        });
+        await _db.SaveChangesAsync();
+        try { await _email.SendEmailVerificationOtpAsync(user.Email, user.Name, otp); } catch { /* email unavailable in dev */ }
+    }
+
     private async Task<AuthResponse> GenerateAuthResponseAsync(User user, string ipAddress)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Secret"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expires = DateTime.UtcNow.AddMinutes(60);
+        var expires = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:ExpiryMinutes"] ?? "60"));
 
         var claims = new[]
         {
@@ -232,6 +359,12 @@ public class AuthService : IAuthService
         var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
         var refreshTokenValue = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         var refreshTokenHash = BC.HashPassword(refreshTokenValue);
+
+        // Clean up expired refresh tokens for this user
+        var expiredTokens = await _db.RefreshTokens
+            .Where(r => r.UserId == user.Id && (r.IsRevoked || r.ExpiresAt <= DateTime.UtcNow))
+            .ToListAsync();
+        _db.RefreshTokens.RemoveRange(expiredTokens);
 
         _db.RefreshTokens.Add(new RefreshToken
         {

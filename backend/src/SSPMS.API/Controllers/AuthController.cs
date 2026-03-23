@@ -15,13 +15,43 @@ public class AuthController : BaseController
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         var result = await _auth.RegisterAsync(request, CurrentUserIp);
-        return result.Succeeded ? Ok(result.Data) : BadRequest(new { message = result.Error });
+        if (!result.Succeeded) return BadRequest(new { message = result.Error });
+        if (result.Data!.RequiresEmailVerification)
+            return Ok(new { requiresVerification = true, email = result.Data.Email });
+        return Ok(result.Data.AuthData);
     }
 
     [HttpPost("login"), AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var result = await _auth.LoginAsync(request, CurrentUserIp);
+        if (!result.Succeeded)
+        {
+            if (result.Error == "EMAIL_NOT_VERIFIED")
+                return Ok(new { requiresVerification = true, email = request.Email });
+            return Unauthorized(new { message = result.Error });
+        }
+        return Ok(result.Data);
+    }
+
+    [HttpPost("verify-email"), AllowAnonymous]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    {
+        var result = await _auth.VerifyEmailAsync(request.Email, request.Otp);
+        return result.Succeeded ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    [HttpPost("resend-verification"), AllowAnonymous]
+    public async Task<IActionResult> ResendVerification([FromBody] ForgotPasswordRequest request)
+    {
+        await _auth.ResendEmailVerificationAsync(request.Email);
+        return Ok(new { message = "Verification code sent if the email is registered and unverified." });
+    }
+
+    [HttpPost("google"), AllowAnonymous]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        var result = await _auth.GoogleLoginAsync(request.IdToken, CurrentUserIp);
         return result.Succeeded ? Ok(result.Data) : Unauthorized(new { message = result.Error });
     }
 

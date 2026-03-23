@@ -8,4 +8,5 @@ public interface IAnalyticsService
     Task<CodeSimilarityReport> GetCodeSimilarityAsync(Guid taskId);
     Task<EmployeeVelocityDto> GetEmployeeVelocityAsync(Guid employeeId);
     Task<ClassVelocityReport> GetClassVelocityAsync(Guid classId);
+    Task<TaskResultsGrid> GetTaskResultsGridAsync(Guid taskId);
 }

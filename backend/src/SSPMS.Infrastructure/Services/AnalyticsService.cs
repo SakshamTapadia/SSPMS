@@ -224,4 +224,93 @@ public class AnalyticsService : IAnalyticsService
         double intercept = (sumY - slope * sumX) / n;
         return Math.Clamp(intercept + slope * n, 0, 100);
     }
+
+    // ── Results Grid ────────────────────────────────────────────────────────────
+    public async Task<TaskResultsGrid> GetTaskResultsGridAsync(Guid taskId)
+    {
+        var task = await _db.Tasks
+            .Include(t => t.Questions).ThenInclude(q => q.Options)
+            .Include(t => t.Class).ThenInclude(c => c.Enrollments)
+            .FirstOrDefaultAsync(t => t.Id == taskId)
+            ?? throw new Exception("Task not found.");
+
+        var submissions = await _db.Submissions
+            .Include(s => s.Answers)
+            .Include(s => s.Employee)
+            .Where(s => s.TaskId == taskId && s.Status != SubmissionStatus.Draft)
+            .ToListAsync();
+
+        var questions = task.Questions.OrderBy(q => q.OrderIndex).ToList();
+        var enrolled = task.Class?.Enrollments.Count(e => e.Status == Domain.Enums.EnrollmentStatus.Active) ?? 0;
+        var totalMarks = questions.Sum(q => q.Marks);
+
+        // Per-question correct answer counts
+        var questionAccuracies = new Dictionary<Guid, (int correct, int total)>();
+        foreach (var q in questions) questionAccuracies[q.Id] = (0, 0);
+
+        var participantRows = new List<GridParticipantRow>();
+
+        foreach (var sub in submissions.OrderBy(s => s.SubmissionRank ?? int.MaxValue))
+        {
+            var cells = new List<GridAnswerCell>();
+            int totalPoints = 0;
+
+            foreach (var q in questions)
+            {
+                var answer = sub.Answers.FirstOrDefault(a => a.QuestionId == q.Id);
+                bool? isCorrect = null;
+                double? rawScore = answer?.RawScore;
+                double maxScore = q.Marks;
+
+                if (q.Type == Domain.Enums.QuestionType.MCQ && answer != null)
+                {
+                    var correctOption = q.Options.FirstOrDefault(o => o.IsCorrect);
+                    if (correctOption != null)
+                    {
+                        isCorrect = answer.AnswerText == correctOption.Id.ToString();
+                        rawScore = isCorrect == true ? q.Marks : 0;
+                    }
+                }
+                else if (answer?.RawScore != null)
+                {
+                    isCorrect = answer.RawScore > 0;
+                }
+
+                if (isCorrect.HasValue)
+                {
+                    var (c, t) = questionAccuracies[q.Id];
+                    questionAccuracies[q.Id] = (isCorrect == true ? c + 1 : c, t + 1);
+                }
+
+                totalPoints += (int)(rawScore ?? 0);
+                cells.Add(new GridAnswerCell(q.Id, isCorrect, rawScore, maxScore));
+            }
+
+            var accuracy = totalMarks > 0 ? Math.Round((double)totalPoints / totalMarks * 100, 0) : 0;
+            var score = sub.TotalFinalScore.HasValue ? (long)sub.TotalFinalScore.Value : (long)totalPoints * 100;
+
+            participantRows.Add(new GridParticipantRow(
+                sub.EmployeeId, sub.Employee?.Name ?? "Unknown",
+                totalPoints, totalMarks, accuracy, score, cells));
+        }
+
+        var questionHeaders = questions.Select(q =>
+        {
+            var (correct, total) = questionAccuracies[q.Id];
+            var acc = total > 0 ? Math.Round((double)correct / total * 100, 0) : 0;
+            return new GridQuestionHeader(q.Id, q.OrderIndex, q.Stem, q.Type.ToString(), q.Marks, acc);
+        }).ToList();
+
+        var overallCorrect = questionAccuracies.Values.Sum(v => v.correct);
+        var overallTotal = questionAccuracies.Values.Sum(v => v.total);
+        var overallAccuracy = overallTotal > 0 ? Math.Round((double)overallCorrect / overallTotal * 100, 0) : 0;
+        var participationRate = enrolled > 0 ? Math.Round((double)submissions.Count / enrolled * 100, 0) : 100;
+
+        return new TaskResultsGrid(
+            taskId, task.Title,
+            enrolled, submissions.Count,
+            overallAccuracy, participationRate,
+            questions.Count,
+            questionHeaders, participantRows);
+    }
 }

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap, map } from 'rxjs';
 import { Router } from '@angular/router';
-import { AuthResponse, LoginRequest, UserProfile } from '../models';
+import { AuthResponse, LoginRequest, UserProfile, AuthCheckResponse } from '../models';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -19,14 +19,28 @@ export class AuthService {
   get role(): string { return this._user$.value?.role ?? ''; }
   get userId(): string { return this._user$.value?.id ?? ''; }
 
-  register(req: { name: string; email: string; password: string }): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API}/register`, req).pipe(
+  register(req: { name: string; email: string; password: string }): Observable<AuthCheckResponse> {
+    return this.http.post<AuthCheckResponse>(`${this.API}/register`, req);
+  }
+
+  login(req: LoginRequest): Observable<AuthCheckResponse> {
+    return this.http.post<AuthCheckResponse>(`${this.API}/login`, req).pipe(
+      tap(res => { if (!res.requiresVerification && res.accessToken) this.storeAuth(res as AuthResponse); })
+    );
+  }
+
+  verifyEmail(email: string, otp: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.API}/verify-email`, { email, otp }).pipe(
       tap(res => this.storeAuth(res))
     );
   }
 
-  login(req: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API}/login`, req).pipe(
+  resendVerification(email: string): Observable<void> {
+    return this.http.post<void>(`${this.API}/resend-verification`, { email });
+  }
+
+  googleLogin(idToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.API}/google`, { idToken }).pipe(
       tap(res => this.storeAuth(res))
     );
   }
@@ -62,7 +76,7 @@ export class AuthService {
 
   getAccessToken(): string | null { return localStorage.getItem('accessToken'); }
 
-  private storeAuth(res: AuthResponse): void {
+  storeAuth(res: AuthResponse): void {
     localStorage.setItem('accessToken', res.accessToken);
     localStorage.setItem('refreshToken', res.refreshToken);
     localStorage.setItem('user', JSON.stringify(res.user));

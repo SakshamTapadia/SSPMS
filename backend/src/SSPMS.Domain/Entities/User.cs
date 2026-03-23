@@ -11,6 +11,8 @@ public class User : BaseEntity
     public UserRole Role { get; set; }
     public string? AvatarUrl { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsEmailVerified { get; set; } = true;
+    public string? GoogleId { get; set; }
     public bool TwoFAEnabled { get; set; } = false;
     public string? TwoFASecret { get; set; }
 

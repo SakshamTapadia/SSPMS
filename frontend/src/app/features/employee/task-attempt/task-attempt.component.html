@@ -24,8 +24,27 @@
   </div>
 </div>
 
+<!-- ── Permissions granted — user must click Begin to enter fullscreen ── -->
+<div class="proctor-gate" *ngIf="proctorState === 'permissions-granted'">
+  <div class="proctor-card">
+    <mat-icon class="proctor-icon" style="color:var(--c-success)">check_circle</mat-icon>
+    <h2>Ready to Begin</h2>
+    <p>Camera and microphone permissions granted. Click the button below to enter fullscreen and start your assessment.</p>
+    <div class="proctor-items">
+      <div class="proctor-item"><mat-icon style="color:var(--c-success)">check</mat-icon> Camera access granted</div>
+      <div class="proctor-item"><mat-icon style="color:var(--c-success)">check</mat-icon> Microphone access granted</div>
+      <div class="proctor-item"><mat-icon>fullscreen</mat-icon> Fullscreen will activate on Begin</div>
+    </div>
+    <p class="proctor-note">Once you begin, switching tabs or exiting fullscreen will be recorded. You have {{ maxTabSwitches }} allowed tab switches before auto-submission.</p>
+    <button class="begin-btn" (click)="beginAssessment()">
+      <mat-icon>play_arrow</mat-icon>
+      Begin Assessment
+    </button>
+  </div>
+</div>
+
 <!-- ── Main assessment UI ───────────────────────────────────────────── -->
-<ng-container *ngIf="proctorState === 'ready' || proctorState === 'in-progress'">
+<ng-container *ngIf="proctorState === 'in-progress'">
 
   <!-- Fullscreen violation banner -->
   <div class="violation-banner" *ngIf="violationWarning">
@@ -47,13 +66,11 @@
         <mat-icon>people</mat-icon>
         <span>{{ submittedCount }} submitted</span>
       </div>
-      <!-- Proctor status indicator -->
       <div class="proctor-status">
         <mat-icon class="proctor-live-icon">videocam</mat-icon>
         <span>Proctored</span>
-        <span class="violation-pill" *ngIf="violationCount > 0">{{ violationCount }} fullscreen violation{{ violationCount !== 1 ? 's' : '' }}</span>
+        <span class="violation-pill" *ngIf="violationCount > 0">{{ violationCount }} violation{{ violationCount !== 1 ? 's' : '' }}</span>
       </div>
-      <!-- Tab switch counter -->
       <div class="tab-switch-status" [class.tab-switch-warning]="tabSwitchCount > 0">
         <mat-icon>tab</mat-icon>
         <span>Switches: {{ tabSwitchCount }}/{{ maxTabSwitches }}</span>
@@ -94,12 +111,25 @@
             <textarea class="code-editor" [(ngModel)]="answers[q.id]" placeholder="Write your solution here..." rows="15" spellcheck="false"></textarea>
           </div>
 
-          <!-- Assessment -->
+          <!-- Assessment (GitHub / repo URL) -->
           <div *ngIf="q.type === 'Assessment'">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>GitHub Repository URL</mat-label>
               <input matInput type="url" [(ngModel)]="answers[q.id]" placeholder="https://github.com/your-username/repo" />
+              <mat-icon matPrefix>code</mat-icon>
+              <mat-hint *ngIf="answers[q.id] && !isValidUrl(answers[q.id])" style="color:var(--c-danger)">Please enter a valid URL</mat-hint>
+            </mat-form-field>
+          </div>
+
+          <!-- Link (any URL — form, doc, deployed app, etc.) -->
+          <div *ngIf="q.type === 'Link'">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Submission Link</mat-label>
+              <input matInput type="url" [(ngModel)]="answers[q.id]"
+                     placeholder="https://docs.google.com/... or https://your-app.com" />
               <mat-icon matPrefix>link</mat-icon>
+              <mat-hint>Paste a Google Form response, Notion doc, deployed app URL, or any relevant link</mat-hint>
+              <mat-hint *ngIf="answers[q.id] && !isValidUrl(answers[q.id])" style="color:var(--c-danger)">Please enter a valid URL</mat-hint>
             </mat-form-field>
           </div>
         </div>
@@ -115,7 +145,7 @@
     </div>
   </div>
 
-  <!-- Camera PiP — always visible during assessment -->
-  <video id="camera-pip" class="camera-pip" autoplay muted playsinline *ngIf="proctorState === 'in-progress'"></video>
+  <!-- Camera PiP -->
+  <video id="camera-pip" class="camera-pip" autoplay muted playsinline></video>
 
 </ng-container>

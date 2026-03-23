@@ -3,101 +3,24 @@
     <h1>Evaluate Task</h1>
     <p>{{ submissions.length }} submission{{ submissions.length !== 1 ? 's' : '' }}</p>
   </div>
-  <div class="flex gap-2 items-center">
-    <button class="btn btn--ghost" (click)="loadAnalytics()">View Analytics</button>
+  <div class="header-actions">
+    <div class="main-tabs">
+      <button class="main-tab-btn" [class.active]="mainTab === 'evaluate'" (click)="switchTab('evaluate')">
+        <mat-icon>rate_review</mat-icon> Evaluate
+      </button>
+      <button class="main-tab-btn" [class.active]="mainTab === 'overview'" (click)="switchTab('overview')">
+        <mat-icon>grid_view</mat-icon> Overview
+      </button>
+      <button class="main-tab-btn" [class.active]="mainTab === 'analytics'" (click)="switchTab('analytics')">
+        <mat-icon>insights</mat-icon> Analytics
+      </button>
+    </div>
     <button class="btn btn--primary" (click)="bulkComplete()">Bulk Complete All</button>
   </div>
 </div>
 
-<!-- Analytics Panel -->
-<div class="card analytics-card" *ngIf="blindSpots || analyticsLoading" style="margin-bottom:20px">
-  <div class="card-header">
-    <div class="flex gap-2">
-      <button class="tab-btn" [class.active]="analyticsTab === 'blind-spots'" (click)="analyticsTab = 'blind-spots'">Blind Spot Analysis</button>
-      <button class="tab-btn" [class.active]="analyticsTab === 'similarity'" (click)="analyticsTab = 'similarity'">Code Similarity</button>
-    </div>
-    <span class="badge badge--info" *ngIf="blindSpots">{{ blindSpots.totalSubmissions }} submissions analyzed</span>
-  </div>
-
-  <div class="loading-center" *ngIf="analyticsLoading && !blindSpots"><mat-spinner diameter="28"></mat-spinner></div>
-
-  <!-- Blind Spots -->
-  <div *ngIf="analyticsTab === 'blind-spots' && blindSpots">
-    <p class="analytics-sub" *ngIf="blindSpots.questions.length === 0">No questions with enough data yet.</p>
-    <div class="blindspot-list">
-      <div class="blindspot-row" *ngFor="let q of blindSpots.questions">
-        <div class="blindspot-meta">
-          <span class="blindspot-label">
-            <span class="badge badge--neutral">{{ q.type }}</span>
-            <span class="blindspot-stem">{{ q.stem | slice:0:80 }}{{ q.stem.length > 80 ? '...' : '' }}</span>
-          </span>
-          <span class="badge" [ngClass]="q.isBlindSpot ? 'badge--danger' : 'badge--success'">
-            {{ q.isBlindSpot ? 'Blind Spot' : 'OK' }}
-          </span>
-        </div>
-        <div class="passrate-bar">
-          <div class="passrate-label">
-            <span>Pass rate: {{ q.passRate | percent:'1.0-0' }}</span>
-            <span>{{ q.correctAnswers }}/{{ q.totalAnswered }} answered correctly</span>
-          </div>
-          <div class="passrate-track">
-            <div class="passrate-fill" [class]="passRateClass(q.passRate)" [style.width.%]="q.passRate * 100"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Code Similarity -->
-  <div *ngIf="analyticsTab === 'similarity' && similarity">
-    <div *ngIf="similarity.clusters.length === 0 && similarity.pairs.length === 0" class="empty-state">
-      <mat-icon>verified</mat-icon>
-      <h3>No suspicious pairs found</h3>
-      <p>All code submissions appear sufficiently distinct</p>
-    </div>
-
-    <div *ngIf="similarity.clusters.length > 0">
-      <p class="analytics-sub">{{ similarity.pairs.length }} pairs compared — {{ similarity.clusters.length }} cluster(s) flagged</p>
-      <div class="cluster-list">
-        <div class="cluster-row" *ngFor="let c of similarity.clusters">
-          <div class="flex items-center gap-2">
-            <span class="badge" [ngClass]="riskClass(c.riskLevel)">{{ c.riskLevel }} Risk</span>
-            <span class="text-sm font-medium">Cluster {{ c.clusterId + 1 }}</span>
-            <span class="text-xs" style="color:var(--c-text-3)">avg. {{ c.avgSimilarity | percent:'1.0-0' }} similar</span>
-          </div>
-          <div class="cluster-names">
-            <span class="name-chip" *ngFor="let n of c.employeeNames">{{ n }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div *ngIf="similarity.pairs.length > 0">
-        <p class="analytics-sub" style="margin-top:16px">Pairwise similarity (suspected pairs only)</p>
-        <table class="data-table" style="margin-top:4px">
-          <thead><tr><th>Employee A</th><th>Employee B</th><th>Similarity</th><th>Flag</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let p of similarity.pairs | slice:0:15">
-              <td>{{ p.employeeAName }}</td>
-              <td>{{ p.employeeBName }}</td>
-              <td>
-                <span class="similarity-cell" [class]="similarityClass(p.similarity)">
-                  {{ p.similarity | percent:'1.0-0' }}
-                </span>
-              </td>
-              <td>
-                <span class="badge badge--danger" *ngIf="p.isSuspected">Suspected</span>
-                <span class="badge badge--neutral" *ngIf="!p.isSuspected">Clear</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Main evaluate layout -->
-<div class="eval-layout">
+<!-- ── EVALUATE TAB ─────────────────────────────────────────────────────── -->
+<div *ngIf="mainTab === 'evaluate'" class="eval-layout">
   <!-- Submissions list -->
   <div class="card submissions-panel">
     <div class="card-header"><h3>Submissions</h3></div>
@@ -146,7 +69,12 @@
         </div>
         <div class="answer-body">
           <pre class="code-answer" *ngIf="getQuestion(answer.questionId)?.type === 'Code'">{{ answer.answerText || '(no answer)' }}</pre>
-          <p class="text-answer" *ngIf="getQuestion(answer.questionId)?.type !== 'Code'">{{ answer.answerText || '(no answer)' }}</p>
+          <ng-container *ngIf="getQuestion(answer.questionId)?.type !== 'Code'">
+            <p class="text-answer" *ngIf="!isValidUrl(answer.answerText ?? '')">{{ answer.answerText || '(no answer)' }}</p>
+            <a class="link-answer" *ngIf="answer.answerText && isValidUrl(answer.answerText)" [href]="answer.answerText" target="_blank" rel="noopener">
+              <mat-icon>open_in_new</mat-icon>{{ answer.answerText }}
+            </a>
+          </ng-container>
         </div>
         <div class="eval-controls">
           <div class="score-field">
@@ -175,6 +103,341 @@
       <mat-icon>chevron_left</mat-icon>
       <h3>Select a submission</h3>
       <p>Click a submission from the list to begin evaluation</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── OVERVIEW TAB (Wayground-style results grid) ─────────────────────── -->
+<div *ngIf="mainTab === 'overview'">
+  <div class="loading-center" *ngIf="gridLoading"><mat-spinner diameter="36"></mat-spinner></div>
+
+  <ng-container *ngIf="!gridLoading && resultsGrid">
+    <!-- Stats bar -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-icon-row">
+          <mat-icon class="stat-icon">gps_fixed</mat-icon>
+          <span class="stat-label">Accuracy</span>
+        </div>
+        <span class="stat-value" [style.color]="accuracyColor(resultsGrid.overallAccuracy)">
+          {{ resultsGrid.overallAccuracy | number:'1.0-0' }}%
+        </span>
+        <div class="stat-bar-track">
+          <div class="stat-bar-fill" [style.width.%]="resultsGrid.overallAccuracy"
+               [style.background]="accuracyColor(resultsGrid.overallAccuracy)"></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-row">
+          <mat-icon class="stat-icon">check_circle</mat-icon>
+          <span class="stat-label">Participation Rate</span>
+        </div>
+        <span class="stat-value">{{ resultsGrid.participationRate | percent:'1.0-0' }}</span>
+        <div class="stat-sub">{{ resultsGrid.totalParticipants }} of {{ resultsGrid.totalEnrolled }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-row">
+          <mat-icon class="stat-icon">people</mat-icon>
+          <span class="stat-label">Participants</span>
+        </div>
+        <span class="stat-value">{{ resultsGrid.totalParticipants }} <span class="stat-of">of {{ resultsGrid.totalEnrolled }}</span></span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-row">
+          <mat-icon class="stat-icon">quiz</mat-icon>
+          <span class="stat-label">Questions</span>
+        </div>
+        <span class="stat-value">{{ resultsGrid.questionCount }}</span>
+      </div>
+    </div>
+
+    <!-- Results grid -->
+    <div class="card grid-card">
+      <!-- Grid toolbar -->
+      <div class="grid-toolbar">
+        <div class="grid-sort-row">
+          <span class="sort-label">Sort by:</span>
+          <button class="sort-btn" [class.active]="sortBy === 'accuracy'" (click)="toggleSort('accuracy')">
+            Accuracy <mat-icon *ngIf="sortBy === 'accuracy'">{{ sortAsc ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+          </button>
+          <button class="sort-btn" [class.active]="sortBy === 'score'" (click)="toggleSort('score')">
+            Score <mat-icon *ngIf="sortBy === 'score'">{{ sortAsc ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+          </button>
+          <button class="sort-btn" [class.active]="sortBy === 'name'" (click)="toggleSort('name')">
+            Name <mat-icon *ngIf="sortBy === 'name'">{{ sortAsc ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+          </button>
+        </div>
+        <div class="grid-legend-inline">
+          <span class="legend-dot correct"></span><span class="legend-lbl">Correct</span>
+          <span class="legend-dot incorrect"></span><span class="legend-lbl">Incorrect</span>
+          <span class="legend-dot neutral-dot"></span><span class="legend-lbl">Not graded</span>
+        </div>
+      </div>
+
+      <div class="grid-scroll-wrapper">
+        <table class="results-grid">
+          <thead>
+            <tr>
+              <th class="grid-name-col sticky-col">Participant</th>
+              <th class="grid-pts-col">
+                <div class="pts-header">
+                  <span>Points</span>
+                  <span class="pts-outof">Out of {{ totalMarks }}</span>
+                </div>
+              </th>
+              <th class="grid-q-col" *ngFor="let q of resultsGrid.questions; let qi = index"
+                  [title]="q.stem">
+                <div class="q-header-cell">
+                  <span class="q-num-label">Q{{ qi + 1 }}</span>
+                  <span class="q-accuracy-pill" [style.background]="accuracyColor(q.accuracyPercent)">
+                    {{ q.accuracyPercent | number:'1.0-0' }}%
+                  </span>
+                </div>
+              </th>
+              <th class="grid-action-col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of sortedParticipants; let pi = index"
+                class="grid-row"
+                (click)="openModal(p)">
+              <td class="grid-name-col sticky-col">
+                <div class="participant-cell">
+                  <span class="participant-avatar">{{ p.employeeName.charAt(0).toUpperCase() }}</span>
+                  <div class="participant-info">
+                    <span class="participant-name">{{ p.employeeName }}</span>
+                    <span class="participant-stats">
+                      <span class="p-correct">✓ {{ correctCount(p) }}</span>
+                      <span class="p-wrong" *ngIf="wrongCount(p) > 0"> × {{ wrongCount(p) }}</span>
+                    </span>
+                  </div>
+                </div>
+              </td>
+              <td class="grid-pts-col">
+                <span class="pts-cell">
+                  <span class="pts-val">{{ p.totalPoints }}/{{ totalMarks }}</span>
+                  <span class="pts-pct" [style.color]="accuracyColor(p.accuracyPercent)">({{ p.accuracyPercent | number:'1.0-0' }}%)</span>
+                </span>
+              </td>
+              <td class="grid-q-col" *ngFor="let q of resultsGrid.questions"
+                  (click)="$event.stopPropagation()">
+                <ng-container *ngIf="findAnswer(p.answers, q.questionId) as cell; else noCell">
+                  <div class="answer-cell" [ngClass]="cellClass(cell.isCorrect)"
+                       [title]="(cell.rawScore ?? 0) + '/' + (cell.maxScore ?? q.marks) + ' pts'">
+                    <mat-icon *ngIf="cell.isCorrect === true">check</mat-icon>
+                    <mat-icon *ngIf="cell.isCorrect === false">close</mat-icon>
+                    <mat-icon *ngIf="cell.isCorrect === null" class="cell-dash">remove</mat-icon>
+                  </div>
+                </ng-container>
+                <ng-template #noCell>
+                  <div class="answer-cell cell-neutral"><mat-icon class="cell-dash">remove</mat-icon></div>
+                </ng-template>
+              </td>
+              <td class="grid-action-col" (click)="$event.stopPropagation()">
+                <button class="eval-row-btn" (click)="evaluateFromGrid(p)" title="Evaluate this submission">
+                  Evaluate
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Question stem legend -->
+      <div class="grid-legend">
+        <div class="legend-item" *ngFor="let q of resultsGrid.questions; let qi = index">
+          <span class="q-accuracy-pill sm" [style.background]="accuracyColor(q.accuracyPercent)">Q{{ qi + 1 }}</span>
+          <span class="legend-stem">{{ q.stem | slice:0:70 }}{{ q.stem.length > 70 ? '...' : '' }}</span>
+          <span class="badge badge--neutral" style="flex-shrink:0">{{ q.type }}</span>
+          <span class="legend-accuracy" [style.color]="accuracyColor(q.accuracyPercent)">{{ q.accuracyPercent | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="card" *ngIf="!gridLoading && !resultsGrid" style="padding:40px">
+    <div class="empty-state">
+      <mat-icon>grid_off</mat-icon>
+      <h3>No data yet</h3>
+      <p>Results will appear once submissions are evaluated</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Participant detail modal ──────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="modalParticipant" (click)="closeModal()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-participant-info">
+        <span class="modal-avatar">{{ modalParticipant.employeeName.charAt(0).toUpperCase() }}</span>
+        <div>
+          <h3>{{ modalParticipant.employeeName }}</h3>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="closeModal()"><mat-icon>close</mat-icon></button>
+    </div>
+
+    <!-- Mini accuracy bar -->
+    <div class="modal-mini-bar">
+      <ng-container *ngFor="let q of resultsGrid!.questions">
+        <ng-container *ngIf="findAnswer(modalParticipant.answers, q.questionId) as cell">
+          <span class="mini-cell" [ngClass]="cellClass(cell.isCorrect)"
+                [title]="q.stem | slice:0:40"></span>
+        </ng-container>
+        <span class="mini-cell cell-neutral"
+              *ngIf="!findAnswer(modalParticipant.answers, q.questionId)"></span>
+      </ng-container>
+    </div>
+    <div class="modal-mini-bar-legend">
+      <span class="p-correct">✓ {{ correctCount(modalParticipant) }} Correct</span>
+      <span class="p-wrong" *ngIf="wrongCount(modalParticipant) > 0"> &nbsp;× {{ wrongCount(modalParticipant) }} Incorrect</span>
+    </div>
+
+    <!-- Stats row -->
+    <div class="modal-stats">
+      <div class="modal-stat">
+        <div class="modal-accuracy-circle" [style.border-color]="accuracyColor(modalParticipant.accuracyPercent)">
+          <span [style.color]="accuracyColor(modalParticipant.accuracyPercent)">{{ modalParticipant.accuracyPercent | number:'1.0-0' }}%</span>
+        </div>
+        <span class="modal-stat-label">Accuracy</span>
+      </div>
+      <div class="modal-stat">
+        <span class="modal-stat-val">{{ modalParticipant.totalPoints }}<span class="modal-stat-max">/{{ totalMarks }}</span></span>
+        <span class="modal-stat-label">Points</span>
+      </div>
+      <div class="modal-stat">
+        <span class="modal-stat-val">{{ modalParticipant.score | number:'1.0-0' }}</span>
+        <span class="modal-stat-label">Score</span>
+      </div>
+    </div>
+
+    <!-- Per-question breakdown -->
+    <div class="modal-q-list">
+      <div class="modal-q-row" *ngFor="let q of resultsGrid!.questions; let qi = index">
+        <ng-container *ngIf="findAnswer(modalParticipant.answers, q.questionId) as cell">
+          <span class="modal-q-status" [ngClass]="cellClass(cell.isCorrect)">
+            <mat-icon *ngIf="cell.isCorrect === true">check</mat-icon>
+            <mat-icon *ngIf="cell.isCorrect === false">close</mat-icon>
+            <mat-icon *ngIf="cell.isCorrect === null">remove</mat-icon>
+          </span>
+          <div class="modal-q-body">
+            <span class="modal-q-num">Q{{ qi + 1 }}</span>
+            <span class="modal-q-stem">{{ q.stem | slice:0:80 }}{{ q.stem.length > 80 ? '...' : '' }}</span>
+          </div>
+          <span class="modal-q-score" [style.color]="accuracyColor(((cell.rawScore ?? 0) / (cell.maxScore ?? q.marks)) * 100)">
+            {{ cell.rawScore ?? '—' }}/{{ cell.maxScore ?? q.marks }}
+          </span>
+        </ng-container>
+        <ng-container *ngIf="!findAnswer(modalParticipant.answers, q.questionId)">
+          <span class="modal-q-status cell-neutral"><mat-icon>remove</mat-icon></span>
+          <div class="modal-q-body">
+            <span class="modal-q-num">Q{{ qi + 1 }}</span>
+            <span class="modal-q-stem">{{ q.stem | slice:0:80 }}{{ q.stem.length > 80 ? '...' : '' }}</span>
+          </div>
+          <span class="modal-q-score" style="color:var(--c-text-3)">—/{{ q.marks }}</span>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn--primary" (click)="evaluateFromGrid(modalParticipant); closeModal()">
+        <mat-icon>rate_review</mat-icon> Evaluate responses
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ANALYTICS TAB ───────────────────────────────────────────────────── -->
+<div *ngIf="mainTab === 'analytics'">
+  <div class="loading-center" *ngIf="analyticsLoading && !blindSpots"><mat-spinner diameter="36"></mat-spinner></div>
+
+  <div class="card analytics-card" *ngIf="blindSpots || !analyticsLoading">
+    <div class="card-header">
+      <div class="flex gap-2">
+        <button class="tab-btn" [class.active]="analyticsTab === 'blind-spots'" (click)="analyticsTab = 'blind-spots'">Blind Spot Analysis</button>
+        <button class="tab-btn" [class.active]="analyticsTab === 'similarity'" (click)="analyticsTab = 'similarity'">Code Similarity</button>
+      </div>
+      <span class="badge badge--info" *ngIf="blindSpots">{{ blindSpots.totalSubmissions }} submissions analyzed</span>
+    </div>
+
+    <!-- Blind Spots -->
+    <div *ngIf="analyticsTab === 'blind-spots' && blindSpots">
+      <p class="analytics-sub" *ngIf="blindSpots.questions.length === 0">No questions with enough data yet.</p>
+      <div class="blindspot-list">
+        <div class="blindspot-row" *ngFor="let q of blindSpots.questions">
+          <div class="blindspot-meta">
+            <span class="blindspot-label">
+              <span class="badge badge--neutral">{{ q.type }}</span>
+              <span class="blindspot-stem">{{ q.stem | slice:0:80 }}{{ q.stem.length > 80 ? '...' : '' }}</span>
+            </span>
+            <span class="badge" [ngClass]="q.isBlindSpot ? 'badge--danger' : 'badge--success'">
+              {{ q.isBlindSpot ? 'Blind Spot' : 'OK' }}
+            </span>
+          </div>
+          <div class="passrate-bar">
+            <div class="passrate-label">
+              <span>Pass rate: {{ q.passRate | percent:'1.0-0' }}</span>
+              <span>{{ q.correctAnswers }}/{{ q.totalAnswered }} answered correctly</span>
+            </div>
+            <div class="passrate-track">
+              <div class="passrate-fill" [class]="passRateClass(q.passRate)" [style.width.%]="q.passRate * 100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Similarity -->
+    <div *ngIf="analyticsTab === 'similarity' && similarity">
+      <div *ngIf="similarity.clusters.length === 0 && similarity.pairs.length === 0" class="empty-state">
+        <mat-icon>verified</mat-icon>
+        <h3>No suspicious pairs found</h3>
+        <p>All code submissions appear sufficiently distinct</p>
+      </div>
+
+      <div *ngIf="similarity.clusters.length > 0">
+        <p class="analytics-sub">{{ similarity.pairs.length }} pairs compared — {{ similarity.clusters.length }} cluster(s) flagged</p>
+        <div class="cluster-list">
+          <div class="cluster-row" *ngFor="let c of similarity.clusters">
+            <div class="flex items-center gap-2">
+              <span class="badge" [ngClass]="riskClass(c.riskLevel)">{{ c.riskLevel }} Risk</span>
+              <span class="text-sm font-medium">Cluster {{ c.clusterId + 1 }}</span>
+              <span class="text-xs" style="color:var(--c-text-3)">avg. {{ c.avgSimilarity | percent:'1.0-0' }} similar</span>
+            </div>
+            <div class="cluster-names">
+              <span class="name-chip" *ngFor="let n of c.employeeNames">{{ n }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="similarity.pairs.length > 0">
+          <p class="analytics-sub" style="margin-top:16px">Pairwise similarity (suspected pairs only)</p>
+          <table class="data-table" style="margin-top:4px">
+            <thead><tr><th>Employee A</th><th>Employee B</th><th>Similarity</th><th>Flag</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let p of similarity.pairs | slice:0:15">
+                <td>{{ p.employeeAName }}</td>
+                <td>{{ p.employeeBName }}</td>
+                <td>
+                  <span class="similarity-cell" [class]="similarityClass(p.similarity)">
+                    {{ p.similarity | percent:'1.0-0' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge badge--danger" *ngIf="p.isSuspected">Suspected</span>
+                  <span class="badge badge--neutral" *ngIf="!p.isSuspected">Clear</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!blindSpots && !analyticsLoading" class="empty-state" style="padding:32px">
+      <mat-icon>analytics</mat-icon>
+      <h3>No analytics data</h3>
+      <p>Analytics will appear once submissions are evaluated</p>
     </div>
   </div>
 </div>
