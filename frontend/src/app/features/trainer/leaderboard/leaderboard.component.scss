@@ -1,0 +1,15 @@
+.page-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+  h2 { margin: 0; font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; }
+}
+
+.rank { font-size: 16px; }
+
+.me { color: var(--c-primary); font-weight: 700; }
+
+.my-row {
+  background: linear-gradient(90deg, var(--c-primary-light), rgba(238,242,255,0.4)) !important;
+  td { border-bottom-color: rgba(199,210,254,0.6); }
+}
+
+mat-button-toggle-group { }

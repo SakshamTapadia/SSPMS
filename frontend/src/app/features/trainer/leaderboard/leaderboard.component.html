@@ -1,0 +1,27 @@
+<div class="page-header">
+  <h2>Leaderboard</h2>
+  <mat-button-toggle-group [(ngModel)]="period" (change)="load()">
+    <mat-button-toggle value="week">This Week</mat-button-toggle>
+    <mat-button-toggle value="month">This Month</mat-button-toggle>
+    <mat-button-toggle value="all">All Time</mat-button-toggle>
+  </mat-button-toggle-group>
+</div>
+<mat-card>
+  <mat-card-content>
+    <mat-progress-bar mode="indeterminate" *ngIf="loading"></mat-progress-bar>
+    <mat-table [dataSource]="entries" *ngIf="!loading">
+      <ng-container matColumnDef="rank"><mat-header-cell *matHeaderCellDef>Rank</mat-header-cell>
+        <mat-cell *matCellDef="let e"><span [class]="'rank rank-' + e.rank">{{ e.rank <= 3 ? ['🥇','🥈','🥉'][e.rank-1] : '#' + e.rank }}</span></mat-cell>
+      </ng-container>
+      <ng-container matColumnDef="name"><mat-header-cell *matHeaderCellDef>Employee</mat-header-cell>
+        <mat-cell *matCellDef="let e"><strong [class.me]="e.employeeId === myId">{{ e.employeeName }}</strong></mat-cell>
+      </ng-container>
+      <ng-container matColumnDef="class"><mat-header-cell *matHeaderCellDef>Class</mat-header-cell><mat-cell *matCellDef="let e">{{ e.className || '—' }}</mat-cell></ng-container>
+      <ng-container matColumnDef="xp"><mat-header-cell *matHeaderCellDef>XP</mat-header-cell><mat-cell *matCellDef="let e"><strong>{{ e.totalXP }}</strong></mat-cell></ng-container>
+      <ng-container matColumnDef="tasks"><mat-header-cell *matHeaderCellDef>Tasks</mat-header-cell><mat-cell *matCellDef="let e">{{ e.tasksCompleted }}</mat-cell></ng-container>
+      <ng-container matColumnDef="avg"><mat-header-cell *matHeaderCellDef>Avg Score</mat-header-cell><mat-cell *matCellDef="let e">{{ e.avgScore | number:'1.1-1' }}</mat-cell></ng-container>
+      <mat-header-row *matHeaderRowDef="['rank','name','class','xp','tasks','avg']"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: ['rank','name','class','xp','tasks','avg']" [class.my-row]="row.employeeId === myId"></mat-row>
+    </mat-table>
+  </mat-card-content>
+</mat-card>

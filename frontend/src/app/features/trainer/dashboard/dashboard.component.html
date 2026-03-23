@@ -1,0 +1,119 @@
+<div class="page-header">
+  <h1>Dashboard</h1>
+  <p>Overview of your classes and recent activity</p>
+</div>
+
+<div class="loading-center" *ngIf="loading">
+  <mat-spinner diameter="36"></mat-spinner>
+</div>
+
+<ng-container *ngIf="!loading">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Classes</div>
+          <div class="stat-value">{{ classes.length }}</div>
+        </div>
+        <div class="stat-icon primary"><mat-icon>school</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Employees</div>
+          <div class="stat-value">{{ totalEmployees }}</div>
+        </div>
+        <div class="stat-icon success"><mat-icon>people</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Total Tasks</div>
+          <div class="stat-value">{{ totalTasks }}</div>
+        </div>
+        <div class="stat-icon warning"><mat-icon>assignment</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Open Tasks</div>
+          <div class="stat-value">{{ openTasks }}</div>
+        </div>
+        <div class="stat-icon info"><mat-icon>pending_actions</mat-icon></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <div class="card">
+      <div class="card-header">
+        <h3>Classes</h3>
+        <a class="btn btn--ghost btn--sm" routerLink="/trainer/classes">View all</a>
+      </div>
+      <div class="empty-state" *ngIf="classes.length === 0">
+        <mat-icon>school</mat-icon>
+        <h3>No classes yet</h3>
+        <p>Classes assigned to you will appear here</p>
+      </div>
+      <table class="data-table" *ngIf="classes.length > 0">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Employees</th>
+            <th>Tasks</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of classes">
+            <td><span class="font-medium">{{ c.name }}</span></td>
+            <td>{{ c.employeeCount }}</td>
+            <td>{{ c.taskCount }}</td>
+            <td><a class="btn btn--ghost btn--sm" [routerLink]="['/trainer/classes', c.id]">Open</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>Recent Tasks</h3>
+        <a class="btn btn--ghost btn--sm" routerLink="/trainer/tasks">View all</a>
+      </div>
+      <div class="empty-state" *ngIf="recentTasks.length === 0">
+        <mat-icon>assignment</mat-icon>
+        <h3>No tasks yet</h3>
+        <p>Tasks you create will appear here</p>
+      </div>
+      <table class="data-table" *ngIf="recentTasks.length > 0">
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Class</th>
+            <th>Status</th>
+            <th>Submissions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of recentTasks | slice:0:6">
+            <td>
+              <a class="font-medium" style="color:var(--c-primary)" [routerLink]="['/trainer/tasks', t.id]">{{ t.title }}</a>
+            </td>
+            <td class="text-sm" style="color:var(--c-text-2)">{{ t.className }}</td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge--success': t.status === 'Published',
+                'badge--neutral': t.status === 'Draft',
+                'badge--warning': t.status === 'Closed'
+              }">{{ t.status }}</span>
+            </td>
+            <td>{{ t.submissionCount }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</ng-container>

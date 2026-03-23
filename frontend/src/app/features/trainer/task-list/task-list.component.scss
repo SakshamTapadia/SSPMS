@@ -1,0 +1,9 @@
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; h2 { margin: 0; } }
+.header-actions { display: flex; gap: 16px; align-items: center; }
+.class-filter { min-width: 200px; }
+.badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.badge-draft { background: #e0e0e0; color: #616161; }
+.badge-published { background: #e8f5e9; color: #2e7d32; }
+.badge-closed { background: #ffebee; color: #c62828; }
+a { color: #1976d2; text-decoration: none; }
+.empty { padding: 32px; text-align: center; color: #888; }

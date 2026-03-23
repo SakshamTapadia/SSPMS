@@ -1,0 +1,230 @@
+<div class="loading-center" *ngIf="loading"><mat-spinner diameter="48"></mat-spinner></div>
+
+<ng-container *ngIf="!loading">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <button mat-icon-button routerLink="/trainer/tasks" matTooltip="Back to tasks">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div>
+        <h1>{{ isNew ? 'Create Task' : (task?.title || 'Edit Task') }}</h1>
+        <span *ngIf="!isNew && task" class="status-badge badge-{{ task.status.toLowerCase() }}">{{ task.status }}</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-raised-button (click)="saveTask()"
+              [disabled]="taskForm.invalid || saving || (!isNew && !isDraft)">
+        <mat-spinner *ngIf="saving" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
+        {{ saving ? 'Saving…' : (isNew ? 'Create Task' : 'Save Changes') }}
+      </button>
+      <button mat-raised-button color="primary" *ngIf="!isNew && isDraft"
+              (click)="publish()" [disabled]="publishing">
+        <mat-spinner *ngIf="publishing" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
+        {{ publishing ? 'Publishing…' : 'Publish' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Task details form -->
+  <mat-card class="form-card">
+    <mat-card-content>
+      <form [formGroup]="taskForm" class="task-form">
+
+        <mat-form-field appearance="outline" *ngIf="isNew">
+          <mat-label>Class</mat-label>
+          <mat-select formControlName="classId">
+            <mat-option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</mat-option>
+          </mat-select>
+          <mat-error>Class is required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Title</mat-label>
+          <input matInput formControlName="title" placeholder="e.g. JavaScript Fundamentals Quiz">
+          <mat-error>Title is required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" rows="2"
+                    placeholder="Brief overview of this task…"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Instructions</mat-label>
+          <textarea matInput formControlName="instructions" rows="3"
+                    placeholder="Detailed instructions shown to students during the task…"></textarea>
+        </mat-form-field>
+
+        <div class="datetime-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Starts At</mat-label>
+            <input matInput type="datetime-local" formControlName="startAt">
+            <mat-error>Required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Ends At</mat-label>
+            <input matInput type="datetime-local" formControlName="endAt">
+            <mat-error>Required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" style="max-width:180px">
+            <mat-label>Duration (minutes)</mat-label>
+            <input matInput type="number" formControlName="durationMinutes" min="1">
+            <mat-error>Required</mat-error>
+          </mat-form-field>
+        </div>
+
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Questions (only shown after task exists) -->
+  <mat-card class="questions-card" *ngIf="!isNew">
+    <mat-card-content>
+
+      <div class="qs-header">
+        <div>
+          <h2 class="qs-title">Questions
+            <span class="q-count-badge">{{ questions.length }}</span>
+          </h2>
+          <span class="qs-sub" *ngIf="questions.length">Total: {{ totalMarks }} marks</span>
+        </div>
+        <button mat-raised-button color="primary" (click)="openAddQuestion()" *ngIf="isDraft">
+          <mat-icon>add</mat-icon> Add Question
+        </button>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" *ngIf="questions.length === 0 && !showQForm">
+        <mat-icon>quiz</mat-icon>
+        <h3>No questions yet</h3>
+        <p>Add at least one question before you can publish.</p>
+      </div>
+
+      <!-- Question list -->
+      <div class="question-list">
+        <div class="question-item" *ngFor="let q of questions; let i = index">
+          <div class="q-header">
+            <span class="q-num">Q{{ i + 1 }}</span>
+            <span class="q-type-badge type-{{ q.type.toLowerCase() }}">{{ q.type }}</span>
+            <span class="q-stem">{{ q.stem }}</span>
+            <span class="spacer"></span>
+            <span class="q-marks">{{ q.marks }} marks</span>
+            <ng-container *ngIf="isDraft">
+              <button mat-icon-button (click)="openEditQuestion(q)" matTooltip="Edit">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteQuestion(q.id)" matTooltip="Delete">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </ng-container>
+          </div>
+          <div class="q-lang" *ngIf="q.type === 'Code'">
+            <mat-icon style="font-size:14px;width:14px;height:14px;vertical-align:middle">code</mat-icon>
+            {{ q.language }}
+          </div>
+          <div class="q-options" *ngIf="q.type === 'MCQ' && q.options">
+            <div class="option-preview" *ngFor="let opt of q.options" [class.correct]="opt.isCorrect">
+              <mat-icon class="opt-icon">{{ opt.isCorrect ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+              {{ opt.optionText }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inline question form -->
+      <div class="q-form-panel" *ngIf="showQForm && isDraft">
+        <div class="q-form-title">
+          <mat-icon color="primary">{{ editingQId ? 'edit' : 'add_circle' }}</mat-icon>
+          <h3>{{ editingQId ? 'Edit Question' : 'New Question' }}</h3>
+          <span class="spacer"></span>
+          <button mat-icon-button (click)="closeQForm()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <form [formGroup]="qForm" class="q-form">
+          <div class="q-form-top-row">
+            <mat-form-field appearance="outline" style="min-width:140px">
+              <mat-label>Type</mat-label>
+              <mat-select formControlName="type" (selectionChange)="onTypeChange()">
+                <mat-option *ngFor="let t of questionTypes" [value]="t">{{ t }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" style="max-width:120px">
+              <mat-label>Marks</mat-label>
+              <input matInput type="number" formControlName="marks" min="1">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" style="min-width:140px"
+                            *ngIf="qForm.get('type')?.value === 'Code'">
+              <mat-label>Language</mat-label>
+              <mat-select formControlName="language">
+                <mat-option *ngFor="let l of languages" [value]="l">{{ l }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Question / Stem</mat-label>
+            <textarea matInput formControlName="stem" rows="2"
+                      placeholder="Enter the question text…"></textarea>
+            <mat-error>Question text is required</mat-error>
+          </mat-form-field>
+
+          <!-- MCQ options builder -->
+          <div class="options-builder" *ngIf="qForm.get('type')?.value === 'MCQ'">
+            <div class="options-builder-header">
+              <span>Answer Options <small>(check the correct one)</small></span>
+              <button mat-stroked-button (click)="addOption()" type="button">
+                <mat-icon>add</mat-icon> Add Option
+              </button>
+            </div>
+            <div class="option-form-row" *ngFor="let ctrl of optionsArray.controls; let i = index"
+                 [formGroup]="$any(ctrl)">
+              <mat-checkbox formControlName="isCorrect" color="primary" class="opt-check"></mat-checkbox>
+              <mat-form-field appearance="outline" class="opt-field">
+                <mat-label>Option {{ i + 1 }}</mat-label>
+                <input matInput formControlName="optionText">
+              </mat-form-field>
+              <button mat-icon-button color="warn" (click)="removeOption(i)" type="button"
+                      [disabled]="optionsArray.length <= 2">
+                <mat-icon>remove_circle_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Code hint -->
+          <div class="code-hint" *ngIf="qForm.get('type')?.value === 'Code'">
+            <mat-icon>info_outline</mat-icon>
+            Students will submit a GitHub repository URL for code questions.
+          </div>
+
+          <!-- Assessment hint -->
+          <div class="code-hint" *ngIf="qForm.get('type')?.value === 'Assessment'">
+            <mat-icon>info_outline</mat-icon>
+            Students will submit a text/document response. Manually scored.
+          </div>
+
+          <!-- Link hint -->
+          <div class="code-hint" *ngIf="qForm.get('type')?.value === 'Link'">
+            <mat-icon>link</mat-icon>
+            Students will paste a URL (e.g. Google Form, Notion doc, deployed app). Manually scored by trainer.
+          </div>
+
+          <div class="q-form-actions">
+            <button mat-button type="button" (click)="closeQForm()">Cancel</button>
+            <button mat-raised-button color="primary" type="button"
+                    (click)="saveQuestion()" [disabled]="qForm.invalid || savingQ">
+              <mat-spinner *ngIf="savingQ" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
+              {{ savingQ ? 'Saving…' : 'Save Question' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </mat-card-content>
+  </mat-card>
+
+</ng-container>

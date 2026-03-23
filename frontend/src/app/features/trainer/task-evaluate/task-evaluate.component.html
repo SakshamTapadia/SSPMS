@@ -1,0 +1,180 @@
+<div class="page-header">
+  <div>
+    <h1>Evaluate Task</h1>
+    <p>{{ submissions.length }} submission{{ submissions.length !== 1 ? 's' : '' }}</p>
+  </div>
+  <div class="flex gap-2 items-center">
+    <button class="btn btn--ghost" (click)="loadAnalytics()">View Analytics</button>
+    <button class="btn btn--primary" (click)="bulkComplete()">Bulk Complete All</button>
+  </div>
+</div>
+
+<!-- Analytics Panel -->
+<div class="card analytics-card" *ngIf="blindSpots || analyticsLoading" style="margin-bottom:20px">
+  <div class="card-header">
+    <div class="flex gap-2">
+      <button class="tab-btn" [class.active]="analyticsTab === 'blind-spots'" (click)="analyticsTab = 'blind-spots'">Blind Spot Analysis</button>
+      <button class="tab-btn" [class.active]="analyticsTab === 'similarity'" (click)="analyticsTab = 'similarity'">Code Similarity</button>
+    </div>
+    <span class="badge badge--info" *ngIf="blindSpots">{{ blindSpots.totalSubmissions }} submissions analyzed</span>
+  </div>
+
+  <div class="loading-center" *ngIf="analyticsLoading && !blindSpots"><mat-spinner diameter="28"></mat-spinner></div>
+
+  <!-- Blind Spots -->
+  <div *ngIf="analyticsTab === 'blind-spots' && blindSpots">
+    <p class="analytics-sub" *ngIf="blindSpots.questions.length === 0">No questions with enough data yet.</p>
+    <div class="blindspot-list">
+      <div class="blindspot-row" *ngFor="let q of blindSpots.questions">
+        <div class="blindspot-meta">
+          <span class="blindspot-label">
+            <span class="badge badge--neutral">{{ q.type }}</span>
+            <span class="blindspot-stem">{{ q.stem | slice:0:80 }}{{ q.stem.length > 80 ? '...' : '' }}</span>
+          </span>
+          <span class="badge" [ngClass]="q.isBlindSpot ? 'badge--danger' : 'badge--success'">
+            {{ q.isBlindSpot ? 'Blind Spot' : 'OK' }}
+          </span>
+        </div>
+        <div class="passrate-bar">
+          <div class="passrate-label">
+            <span>Pass rate: {{ q.passRate | percent:'1.0-0' }}</span>
+            <span>{{ q.correctAnswers }}/{{ q.totalAnswered }} answered correctly</span>
+          </div>
+          <div class="passrate-track">
+            <div class="passrate-fill" [class]="passRateClass(q.passRate)" [style.width.%]="q.passRate * 100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code Similarity -->
+  <div *ngIf="analyticsTab === 'similarity' && similarity">
+    <div *ngIf="similarity.clusters.length === 0 && similarity.pairs.length === 0" class="empty-state">
+      <mat-icon>verified</mat-icon>
+      <h3>No suspicious pairs found</h3>
+      <p>All code submissions appear sufficiently distinct</p>
+    </div>
+
+    <div *ngIf="similarity.clusters.length > 0">
+      <p class="analytics-sub">{{ similarity.pairs.length }} pairs compared — {{ similarity.clusters.length }} cluster(s) flagged</p>
+      <div class="cluster-list">
+        <div class="cluster-row" *ngFor="let c of similarity.clusters">
+          <div class="flex items-center gap-2">
+            <span class="badge" [ngClass]="riskClass(c.riskLevel)">{{ c.riskLevel }} Risk</span>
+            <span class="text-sm font-medium">Cluster {{ c.clusterId + 1 }}</span>
+            <span class="text-xs" style="color:var(--c-text-3)">avg. {{ c.avgSimilarity | percent:'1.0-0' }} similar</span>
+          </div>
+          <div class="cluster-names">
+            <span class="name-chip" *ngFor="let n of c.employeeNames">{{ n }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="similarity.pairs.length > 0">
+        <p class="analytics-sub" style="margin-top:16px">Pairwise similarity (suspected pairs only)</p>
+        <table class="data-table" style="margin-top:4px">
+          <thead><tr><th>Employee A</th><th>Employee B</th><th>Similarity</th><th>Flag</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let p of similarity.pairs | slice:0:15">
+              <td>{{ p.employeeAName }}</td>
+              <td>{{ p.employeeBName }}</td>
+              <td>
+                <span class="similarity-cell" [class]="similarityClass(p.similarity)">
+                  {{ p.similarity | percent:'1.0-0' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge badge--danger" *ngIf="p.isSuspected">Suspected</span>
+                <span class="badge badge--neutral" *ngIf="!p.isSuspected">Clear</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main evaluate layout -->
+<div class="eval-layout">
+  <!-- Submissions list -->
+  <div class="card submissions-panel">
+    <div class="card-header"><h3>Submissions</h3></div>
+    <div class="sub-list">
+      <div class="sub-item" *ngFor="let s of submissions"
+           (click)="select(s)"
+           [class.selected]="selected?.id === s.id">
+        <div class="sub-info">
+          <span class="sub-name">{{ s.employeeName }}</span>
+          <span class="sub-meta">
+            Rank #{{ s.submissionRank ?? '—' }}
+            <ng-container *ngIf="s.totalFinalScore != null"> &middot; {{ s.totalFinalScore | number:'1.0-1' }} pts</ng-container>
+          </span>
+        </div>
+        <span class="badge" [ngClass]="{
+          'badge--success': s.status === 'Evaluated',
+          'badge--warning': s.status === 'Submitted',
+          'badge--neutral': s.status === 'Draft'
+        }">{{ s.status }}</span>
+      </div>
+      <div class="empty-state" *ngIf="submissions.length === 0">
+        <mat-icon>inbox</mat-icon>
+        <h3>No submissions</h3>
+        <p>Submissions will appear here once employees submit</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evaluation form -->
+  <div class="card evaluation-panel" *ngIf="selected">
+    <div class="card-header">
+      <div>
+        <h3>{{ selected.employeeName }}</h3>
+        <span class="text-xs" style="color:var(--c-text-3)">
+          Rank #{{ selected.submissionRank ?? '—' }} &middot; Multiplier {{ selected.multiplier ?? 0 | percent }}
+        </span>
+      </div>
+      <button class="btn btn--primary" (click)="save()" [disabled]="loading">Save</button>
+    </div>
+    <div class="answer-list">
+      <div class="answer-block" *ngFor="let answer of selected.answers; let i = index">
+        <div class="answer-header">
+          <span class="q-num">Q{{ i + 1 }}</span>
+          <span class="q-stem">{{ getQuestion(answer.questionId)?.stem }}</span>
+          <span class="badge badge--neutral">{{ getQuestion(answer.questionId)?.type }}</span>
+        </div>
+        <div class="answer-body">
+          <pre class="code-answer" *ngIf="getQuestion(answer.questionId)?.type === 'Code'">{{ answer.answerText || '(no answer)' }}</pre>
+          <p class="text-answer" *ngIf="getQuestion(answer.questionId)?.type !== 'Code'">{{ answer.answerText || '(no answer)' }}</p>
+        </div>
+        <div class="eval-controls">
+          <div class="score-field">
+            <label class="field-label">Score</label>
+            <div class="score-input-wrap">
+              <input class="score-input" type="number" [(ngModel)]="scores[answer.id]"
+                     [max]="getQuestion(answer.questionId)?.marks ?? null" min="0" />
+              <span class="score-max">/ {{ getQuestion(answer.questionId)?.marks }}</span>
+            </div>
+          </div>
+          <div class="note-field">
+            <label class="field-label">Feedback note</label>
+            <input class="note-input" type="text" [(ngModel)]="notes[answer.id]" placeholder="Optional feedback for employee..." />
+          </div>
+          <label class="plagiarism-check">
+            <input type="checkbox" [(ngModel)]="flags[answer.id]" />
+            <span>Flag plagiarism</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card empty-panel" *ngIf="!selected">
+    <div class="empty-state">
+      <mat-icon>chevron_left</mat-icon>
+      <h3>Select a submission</h3>
+      <p>Click a submission from the list to begin evaluation</p>
+    </div>
+  </div>
+</div>
