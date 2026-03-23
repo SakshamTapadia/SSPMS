@@ -1,0 +1,68 @@
+<div class="page-header">
+  <div>
+    <h1>Leaderboard</h1>
+    <p>Performance rankings for your class</p>
+  </div>
+  <div class="period-tabs" *ngIf="!noClass">
+    <button class="period-btn" [class.active]="period === 'week'" (click)="period = 'week'; load()">Week</button>
+    <button class="period-btn" [class.active]="period === 'month'" (click)="period = 'month'; load()">Month</button>
+    <button class="period-btn" [class.active]="period === 'all'" (click)="period = 'all'; load()">All Time</button>
+  </div>
+</div>
+
+<div class="loading-center" *ngIf="loading"><mat-spinner diameter="36"></mat-spinner></div>
+
+<div class="card" *ngIf="!loading && noClass">
+  <div class="empty-state">
+    <mat-icon>group_off</mat-icon>
+    <h3>Not enrolled in a class</h3>
+    <p>You are not currently assigned to a class. Contact your trainer to get enrolled.</p>
+  </div>
+</div>
+
+<div class="card" *ngIf="!loading && !noClass">
+  <div class="empty-state" *ngIf="entries.length === 0">
+    <mat-icon>leaderboard</mat-icon>
+    <h3>No data yet</h3>
+    <p>Complete tasks to appear on the leaderboard</p>
+  </div>
+
+  <table class="data-table" *ngIf="entries.length > 0">
+    <thead>
+      <tr>
+        <th style="width:60px">Rank</th>
+        <th>Employee</th>
+        <th>Class</th>
+        <th>XP</th>
+        <th>Tasks</th>
+        <th>Avg Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let e of entries" [class.my-row]="e.employeeId === myId">
+        <td>
+          <span class="rank-badge"
+            [class.rank-badge--1]="e.rank === 1"
+            [class.rank-badge--2]="e.rank === 2"
+            [class.rank-badge--3]="e.rank === 3"
+            [class.rank-badge--rest]="e.rank > 3">
+            {{ e.rank }}
+          </span>
+        </td>
+        <td>
+          <div class="flex items-center gap-2">
+            <div class="user-avatar-sm">{{ e.employeeName.charAt(0) }}</div>
+            <span class="font-medium" [style.color]="e.employeeId === myId ? 'var(--c-primary)' : ''">
+              {{ e.employeeName }}
+              <span class="you-chip" *ngIf="e.employeeId === myId">You</span>
+            </span>
+          </div>
+        </td>
+        <td class="text-sm" style="color:var(--c-text-2)">{{ e.className || '—' }}</td>
+        <td><strong>{{ e.totalXP | number }}</strong></td>
+        <td>{{ e.tasksCompleted }}</td>
+        <td>{{ e.avgScore | number:'1.1-1' }}%</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

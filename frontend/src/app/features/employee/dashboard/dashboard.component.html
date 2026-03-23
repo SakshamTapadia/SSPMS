@@ -1,0 +1,110 @@
+<div class="loading-center" *ngIf="loading">
+  <mat-spinner diameter="36"></mat-spinner>
+</div>
+
+<ng-container *ngIf="!loading && stats">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Your performance at a glance</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Class Rank</div>
+          <div class="stat-value">#{{ stats.classRank }}</div>
+        </div>
+        <div class="stat-icon primary"><mat-icon>military_tech</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Total XP</div>
+          <div class="stat-value">{{ stats.totalXP | number }}</div>
+        </div>
+        <div class="stat-icon warning"><mat-icon>bolt</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Day Streak</div>
+          <div class="stat-value">{{ stats.currentStreak }}</div>
+        </div>
+        <div class="stat-icon success"><mat-icon>local_fire_department</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Avg Score</div>
+          <div class="stat-value">{{ stats.avgScore | number:'1.1-1' }}%</div>
+        </div>
+        <div class="stat-icon info"><mat-icon>show_chart</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Tasks Done</div>
+          <div class="stat-value">{{ stats.completedTasks }}<span class="stat-denom">/{{ stats.totalTasks }}</span></div>
+        </div>
+        <div class="stat-icon primary"><mat-icon>task_alt</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Global Rank</div>
+          <div class="stat-value">#{{ stats.globalRank }}</div>
+        </div>
+        <div class="stat-icon warning"><mat-icon>public</mat-icon></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <div class="card">
+      <div class="card-header">
+        <h3>Upcoming Tasks</h3>
+        <a class="btn btn--ghost btn--sm" routerLink="/employee/tasks">View all</a>
+      </div>
+      <div class="empty-state" *ngIf="!stats.upcomingTasks?.length">
+        <mat-icon>assignment</mat-icon>
+        <h3>No upcoming tasks</h3>
+        <p>Check back later for new assignments</p>
+      </div>
+      <div class="task-list" *ngIf="stats.upcomingTasks?.length">
+        <div class="task-row" *ngFor="let t of stats.upcomingTasks">
+          <div class="task-info">
+            <span class="task-title">{{ t.title }}</span>
+            <span class="task-meta">Closes {{ t.endAt | date:'dd MMM, HH:mm' }}</span>
+          </div>
+          <a class="btn btn--primary btn--sm" [routerLink]="['/employee/tasks', t.id, 'attempt']">Start</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>Badges Earned</h3>
+        <span class="text-sm" style="color:var(--c-text-3)">{{ stats.recentBadges?.length || 0 }} total</span>
+      </div>
+      <div class="empty-state" *ngIf="!stats.recentBadges?.length">
+        <mat-icon>workspace_premium</mat-icon>
+        <h3>No badges yet</h3>
+        <p>Complete tasks early and score high to earn badges</p>
+      </div>
+      <div class="badge-grid" *ngIf="stats.recentBadges?.length">
+        <div class="badge-item" *ngFor="let b of stats.recentBadges" [matTooltip]="b.description">
+          <div class="badge-icon-wrap">
+            <mat-icon class="badge-icon">workspace_premium</mat-icon>
+          </div>
+          <span class="badge-name">{{ b.name }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>

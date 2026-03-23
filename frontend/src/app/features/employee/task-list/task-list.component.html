@@ -1,0 +1,53 @@
+<div class="page-header">
+  <h1>My Tasks</h1>
+  <p>Assignments from your class</p>
+</div>
+
+<div class="loading-center" *ngIf="loading"><mat-spinner diameter="36"></mat-spinner></div>
+
+<div class="empty-state" *ngIf="!loading && tasks.length === 0">
+  <mat-icon>assignment</mat-icon>
+  <h3>No tasks yet</h3>
+  <p>Tasks assigned to your class will appear here</p>
+</div>
+
+<div class="tasks-grid" *ngIf="!loading && tasks.length > 0">
+  <div class="task-card" *ngFor="let t of tasks">
+    <div class="task-card-header">
+      <div class="task-card-top">
+        <span class="badge" [ngClass]="{
+          'badge--success': t.status === 'Published',
+          'badge--neutral': t.status === 'Draft',
+          'badge--warning': t.status === 'Closed'
+        }">{{ t.status }}</span>
+        <span class="task-class">{{ t.className }}</span>
+      </div>
+      <h3 class="task-name">{{ t.title }}</h3>
+      <p class="task-desc" *ngIf="t.description">{{ t.description | slice:0:100 }}{{ t.description.length > 100 ? '...' : '' }}</p>
+    </div>
+    <div class="task-card-meta">
+      <span class="meta-item">
+        <mat-icon class="meta-icon">schedule</mat-icon>
+        {{ t.startAt | date:'dd MMM, HH:mm' }}
+      </span>
+      <span class="meta-item">
+        <mat-icon class="meta-icon">event</mat-icon>
+        {{ t.endAt | date:'dd MMM, HH:mm' }}
+      </span>
+      <span class="meta-item">
+        <mat-icon class="meta-icon">timer</mat-icon>
+        {{ t.durationMinutes }} min
+      </span>
+      <span class="meta-item">
+        <mat-icon class="meta-icon">grade</mat-icon>
+        {{ t.totalMarks }} marks
+      </span>
+    </div>
+    <div class="task-card-footer">
+      <a class="btn btn--ghost btn--sm" [routerLink]="['/employee/tasks', t.id, 'result']">Results</a>
+      <a class="btn btn--primary btn--sm" *ngIf="isOpen(t)"
+         [routerLink]="['/employee/tasks', t.id, 'attempt']">Start Task</a>
+      <button class="btn btn--ghost btn--sm" *ngIf="!isOpen(t)" disabled>{{ buttonLabel(t) }}</button>
+    </div>
+  </div>
+</div>

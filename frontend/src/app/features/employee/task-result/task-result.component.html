@@ -1,0 +1,81 @@
+<div *ngIf="loading" class="loading-center"><mat-spinner></mat-spinner></div>
+<ng-container *ngIf="!loading && submission">
+
+  <!-- Malpractice alert -->
+  <div class="malpractice-banner" *ngIf="submission.isMalpractice">
+    <mat-icon>gavel</mat-icon>
+    <div>
+      <strong>Malpractice Detected</strong>
+      <p>This submission was auto-submitted after {{ submission.tabSwitchCount }} screen switch{{ submission.tabSwitchCount !== 1 ? 'es' : '' }}. Your final score has been set to 0.</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <h2>Results: {{ submission.taskTitle }}</h2>
+    <div class="status-badge" [class]="'badge-' + submission.status.toLowerCase()">{{ submission.status }}</div>
+    <div class="badge-malpractice" *ngIf="submission.isMalpractice">
+      <mat-icon>warning</mat-icon> Malpractice
+    </div>
+  </div>
+  <div class="score-summary">
+    <mat-card class="score-card"><mat-card-content>
+      <div class="score-val">{{ submission.totalFinalScore | number:'1.0-1' }}</div>
+      <div class="score-lbl">Final Score</div>
+      <div class="score-sub">(Raw: {{ submission.totalRawScore | number:'1.0-1' }} × {{ submission.multiplier | percent }})</div>
+    </mat-card-content></mat-card>
+    <mat-card class="score-card"><mat-card-content>
+      <div class="score-val">#{{ submission.submissionRank ?? '—' }}</div>
+      <div class="score-lbl">Submission Rank</div>
+    </mat-card-content></mat-card>
+  </div>
+  <mat-card *ngIf="submission.status === 'Submitted'" class="pending-card">
+    <mat-card-content><mat-icon>hourglass_empty</mat-icon> Your submission is pending evaluation by the trainer.</mat-card-content>
+  </mat-card>
+
+  <div *ngIf="submission.status === 'Evaluated'" class="answers-list">
+    <mat-expansion-panel *ngFor="let a of submission.answers; let i = index" [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <ng-container *ngIf="getQuestion(a.questionId) as q">
+            <mat-icon *ngIf="q.type === 'MCQ'" class="result-icon"
+                      [style.color]="isMcqCorrect(q, a.answerText) ? '#4caf50' : '#f44336'">
+              {{ isMcqCorrect(q, a.answerText) ? 'check_circle' : 'cancel' }}
+            </mat-icon>
+          </ng-container>
+          Q{{ i + 1 }}: {{ getQuestion(a.questionId)?.stem | slice:0:60 }}
+        </mat-panel-title>
+        <mat-panel-description>{{ a.finalScore ?? '?' }} / {{ getQuestion(a.questionId)?.marks }} marks</mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <div class="answer-detail" *ngIf="getQuestion(a.questionId) as q">
+
+        <!-- MCQ: show options with correct/wrong highlight -->
+        <ng-container *ngIf="q.type === 'MCQ'">
+          <div class="mcq-options-result">
+            <div *ngFor="let opt of q.options"
+                 class="mcq-opt-result"
+                 [class.opt-correct]="opt.isCorrect"
+                 [class.opt-selected]="opt.id === a.answerText"
+                 [class.opt-wrong]="opt.id === a.answerText && !opt.isCorrect">
+              <mat-icon>
+                {{ opt.isCorrect ? 'check_circle' : (opt.id === a.answerText ? 'cancel' : 'radio_button_unchecked') }}
+              </mat-icon>
+              {{ opt.optionText }}
+              <span *ngIf="opt.isCorrect" class="opt-label">(Correct)</span>
+              <span *ngIf="opt.id === a.answerText && !opt.isCorrect" class="opt-label">(Your answer)</span>
+            </div>
+          </div>
+          <p *ngIf="!a.answerText" class="no-answer">(No answer selected)</p>
+        </ng-container>
+
+        <!-- Code / Assessment / Link: show submitted text -->
+        <ng-container *ngIf="q.type !== 'MCQ'">
+          <p><strong>Your answer:</strong> {{ a.answerText || '(no answer submitted)' }}</p>
+        </ng-container>
+
+        <p *ngIf="a.evaluatorNote"><strong>Trainer feedback:</strong> {{ a.evaluatorNote }}</p>
+        <mat-chip *ngIf="a.isPlagiarismFlag" color="warn" selected>Plagiarism Flag</mat-chip>
+      </div>
+    </mat-expansion-panel>
+  </div>
+</ng-container>

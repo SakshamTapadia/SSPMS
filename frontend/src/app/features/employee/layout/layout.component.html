@@ -1,0 +1,65 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">S</div>
+      <div class="brand-text">
+        <span class="brand-name">SSPMS</span>
+        <span class="brand-role">Employee</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item" routerLink="dashboard" routerLinkActive="active">
+        <mat-icon class="nav-icon">grid_view</mat-icon>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" routerLink="tasks" routerLinkActive="active">
+        <mat-icon class="nav-icon">assignment</mat-icon>
+        <span>My Tasks</span>
+      </a>
+      <a class="nav-item" routerLink="leaderboard" routerLinkActive="active">
+        <mat-icon class="nav-icon">bar_chart</mat-icon>
+        <span>Leaderboard</span>
+      </a>
+      <a class="nav-item" routerLink="reports" routerLinkActive="active">
+        <mat-icon class="nav-icon">insert_chart</mat-icon>
+        <span>My Reports</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom" *ngIf="user$ | async as u">
+      <div class="user-profile">
+        <div class="user-avatar">{{ u.name.charAt(0) }}</div>
+        <div class="user-info">
+          <span class="user-name">{{ u.name }}</span>
+          <span class="user-email">{{ u.email }}</span>
+        </div>
+      </div>
+      <button class="logout-btn" (click)="openChangePassword()" title="Change password">
+        <mat-icon>lock</mat-icon>
+      </button>
+      <button class="logout-btn" (click)="logout()" title="Sign out">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="page-breadcrumb">Employee Portal</span>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn" [class.has-badge]="unreadCount > 0" title="Notifications" (click)="openNotifications()">
+          <mat-icon [matBadge]="unreadCount > 0 ? unreadCount : null" matBadgeSize="small" matBadgeColor="warn">
+            notifications
+          </mat-icon>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

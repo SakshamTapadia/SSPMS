@@ -1,0 +1,26 @@
+<div class="page-header">
+  <h2>My Performance Report</h2>
+  <button mat-raised-button color="primary" (click)="downloadPdf()"><mat-icon>download</mat-icon> Export PDF</button>
+</div>
+<div *ngIf="loading" class="loading-center"><mat-spinner></mat-spinner></div>
+<ng-container *ngIf="!loading && report">
+  <div class="summary-cards">
+    <mat-card><mat-card-content><div class="val">{{ report.totalXP }}</div><div class="lbl">Total XP</div></mat-card-content></mat-card>
+    <mat-card><mat-card-content><div class="val">#{{ report.classRank }}</div><div class="lbl">Class Rank</div></mat-card-content></mat-card>
+    <mat-card><mat-card-content><div class="val">{{ report.avgFinalScore | number:'1.1-1' }}</div><div class="lbl">Avg Score</div></mat-card-content></mat-card>
+  </div>
+  <mat-card style="margin-top:24px">
+    <mat-card-header><mat-card-title>Task History</mat-card-title></mat-card-header>
+    <mat-card-content>
+      <mat-table [dataSource]="report.taskResults">
+        <ng-container matColumnDef="task"><mat-header-cell *matHeaderCellDef>Task</mat-header-cell><mat-cell *matCellDef="let t">{{ t.taskTitle }}</mat-cell></ng-container>
+        <ng-container matColumnDef="submitted"><mat-header-cell *matHeaderCellDef>Submitted</mat-header-cell><mat-cell *matCellDef="let t">{{ t.submittedAt | date:'dd MMM HH:mm' }}</mat-cell></ng-container>
+        <ng-container matColumnDef="rank"><mat-header-cell *matHeaderCellDef>Rank</mat-header-cell><mat-cell *matCellDef="let t">#{{ t.rank ?? 'N/A' }}</mat-cell></ng-container>
+        <ng-container matColumnDef="final"><mat-header-cell *matHeaderCellDef>Final Score</mat-header-cell><mat-cell *matCellDef="let t"><strong>{{ t.finalScore | number:'1.0-1' }}</strong></mat-cell></ng-container>
+        <ng-container matColumnDef="multiplier"><mat-header-cell *matHeaderCellDef>Multiplier</mat-header-cell><mat-cell *matCellDef="let t">{{ t.multiplier | percent }}</mat-cell></ng-container>
+        <mat-header-row *matHeaderRowDef="['task','submitted','rank','final','multiplier']"></mat-header-row>
+        <mat-row *matRowDef="let row; columns: ['task','submitted','rank','final','multiplier']"></mat-row>
+      </mat-table>
+    </mat-card-content>
+  </mat-card>
+</ng-container>

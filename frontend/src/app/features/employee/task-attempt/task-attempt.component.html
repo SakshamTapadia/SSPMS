@@ -1,0 +1,121 @@
+<!-- ── Proctoring permission gate ───────────────────────────────────── -->
+<div class="proctor-gate" *ngIf="proctorState === 'requesting'">
+  <div class="proctor-card">
+    <mat-icon class="proctor-icon">security</mat-icon>
+    <h2>Proctored Assessment</h2>
+    <p>This assessment requires camera and microphone access, and must be completed in fullscreen mode.</p>
+    <div class="proctor-items">
+      <div class="proctor-item"><mat-icon>videocam</mat-icon> Camera access</div>
+      <div class="proctor-item"><mat-icon>mic</mat-icon> Microphone access</div>
+      <div class="proctor-item"><mat-icon>fullscreen</mat-icon> Fullscreen mode</div>
+    </div>
+    <p class="proctor-note">Please allow access in the browser prompt. Exiting fullscreen during the assessment will be recorded as a violation.</p>
+    <mat-spinner diameter="28"></mat-spinner>
+  </div>
+</div>
+
+<!-- ── Permission denied screen ────────────────────────────────────── -->
+<div class="proctor-gate proctor-denied" *ngIf="proctorState === 'denied'">
+  <div class="proctor-card">
+    <mat-icon class="proctor-icon denied">no_photography</mat-icon>
+    <h2>Access Denied</h2>
+    <p>{{ proctorError }}</p>
+    <p class="proctor-note">Camera and microphone permissions are mandatory. Please allow access in your browser settings and reload the page.</p>
+  </div>
+</div>
+
+<!-- ── Main assessment UI ───────────────────────────────────────────── -->
+<ng-container *ngIf="proctorState === 'ready' || proctorState === 'in-progress'">
+
+  <!-- Fullscreen violation banner -->
+  <div class="violation-banner" *ngIf="violationWarning">
+    <mat-icon>warning</mat-icon>
+    <span>You exited fullscreen — violation #{{ violationCount }} recorded. Return to fullscreen to continue.</span>
+    <button class="reenter-btn" (click)="proctor.enterFullscreen()">Return to fullscreen</button>
+  </div>
+
+  <div class="loading-center" *ngIf="loading"><mat-spinner diameter="36"></mat-spinner></div>
+
+  <div *ngIf="!loading && submission">
+    <!-- Sticky header bar -->
+    <div class="attempt-header">
+      <div class="timer" [class.urgent]="timeLeft < 300">
+        <mat-icon>timer</mat-icon>
+        <span>{{ timeDisplay }}</span>
+      </div>
+      <div class="submitted-count">
+        <mat-icon>people</mat-icon>
+        <span>{{ submittedCount }} submitted</span>
+      </div>
+      <!-- Proctor status indicator -->
+      <div class="proctor-status">
+        <mat-icon class="proctor-live-icon">videocam</mat-icon>
+        <span>Proctored</span>
+        <span class="violation-pill" *ngIf="violationCount > 0">{{ violationCount }} fullscreen violation{{ violationCount !== 1 ? 's' : '' }}</span>
+      </div>
+      <!-- Tab switch counter -->
+      <div class="tab-switch-status" [class.tab-switch-warning]="tabSwitchCount > 0">
+        <mat-icon>tab</mat-icon>
+        <span>Switches: {{ tabSwitchCount }}/{{ maxTabSwitches }}</span>
+      </div>
+      <div class="attempt-actions">
+        <button class="save-btn" (click)="saveDraft()">Save draft</button>
+        <button class="submit-btn-main" (click)="submit()" [disabled]="submitting">
+          <mat-spinner diameter="16" *ngIf="submitting"></mat-spinner>
+          <span *ngIf="!submitting">Submit</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Questions -->
+    <div class="questions-area">
+      <div class="question-card" *ngFor="let q of questions; let i = index">
+        <div class="question-head" [class.answered]="answers[q.id]">
+          <span class="q-badge">Q{{ i + 1 }}</span>
+          <span class="q-title">{{ q.stem | slice:0:80 }}{{ q.stem.length > 80 ? '...' : '' }}</span>
+          <span class="badge badge--neutral">{{ q.type }}</span>
+          <span class="q-marks">{{ q.marks }} mark{{ q.marks !== 1 ? 's' : '' }}</span>
+        </div>
+
+        <div class="question-body">
+          <p class="stem">{{ q.stem }}</p>
+
+          <!-- MCQ -->
+          <div *ngIf="q.type === 'MCQ'" class="radio-group">
+            <label class="radio-option" *ngFor="let o of q.options">
+              <input type="radio" [name]="q.id" [value]="o.id" [(ngModel)]="answers[q.id]" />
+              {{ o.optionText }}
+            </label>
+          </div>
+
+          <!-- Code -->
+          <div *ngIf="q.type === 'Code'">
+            <div class="code-lang">Language: <strong>{{ q.language || 'Any' }}</strong></div>
+            <textarea class="code-editor" [(ngModel)]="answers[q.id]" placeholder="Write your solution here..." rows="15" spellcheck="false"></textarea>
+          </div>
+
+          <!-- Assessment -->
+          <div *ngIf="q.type === 'Assessment'">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>GitHub Repository URL</mat-label>
+              <input matInput type="url" [(ngModel)]="answers[q.id]" placeholder="https://github.com/your-username/repo" />
+              <mat-icon matPrefix>link</mat-icon>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-actions">
+      <button class="save-btn" (click)="saveDraft()">Save draft</button>
+      <button class="submit-btn-main" (click)="submit()" [disabled]="submitting">
+        <mat-spinner diameter="16" *ngIf="submitting"></mat-spinner>
+        <span *ngIf="!submitting">Final Submit</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Camera PiP — always visible during assessment -->
+  <video id="camera-pip" class="camera-pip" autoplay muted playsinline *ngIf="proctorState === 'in-progress'"></video>
+
+</ng-container>
