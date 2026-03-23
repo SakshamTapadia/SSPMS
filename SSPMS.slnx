@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/backend/" />
+  <Folder Name="/backend/src/">
+    <Project Path="backend/src/SSPMS.API/SSPMS.API.csproj" />
+    <Project Path="backend/src/SSPMS.Application/SSPMS.Application.csproj" />
+    <Project Path="backend/src/SSPMS.Domain/SSPMS.Domain.csproj" />
+    <Project Path="backend/src/SSPMS.Infrastructure/SSPMS.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/backend/tests/">
+    <Project Path="backend/tests/SSPMS.Application.Tests/SSPMS.Application.Tests.csproj" />
+  </Folder>
+</Solution>
