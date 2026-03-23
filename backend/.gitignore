@@ -1,0 +1,22 @@
+# ── Build outputs ────────────────────────────────────────
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# ── Secrets & config overrides ───────────────────────────
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Production.json
+secrets.json
+*.pfx
+*.p12
+
+# ── Test results ─────────────────────────────────────────
+TestResults/
+coverage/
+*.trx
+
+# ── Publish output ───────────────────────────────────────
+publish/
