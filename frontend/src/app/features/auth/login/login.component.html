@@ -1,0 +1,78 @@
+<div class="login-page">
+  <!-- Left panel -->
+  <div class="login-panel">
+    <div class="login-inner">
+      <div class="login-brand">
+        <div class="brand-mark">S</div>
+        <span class="brand-label">SSPMS</span>
+      </div>
+
+      <div class="login-heading">
+        <h1>Welcome back</h1>
+        <p>Sign in to your SmartSkill account</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+        <div class="field-group">
+          <label class="field-label">Email address</label>
+          <mat-form-field appearance="outline" class="field-full">
+            <input matInput type="email" formControlName="email" placeholder="you@company.com" autocomplete="email" />
+            <mat-error *ngIf="form.get('email')?.hasError('required')">Email is required</mat-error>
+            <mat-error *ngIf="form.get('email')?.hasError('email')">Enter a valid email</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="field-group">
+          <div class="label-row">
+            <label class="field-label">Password</label>
+            <a routerLink="/forgot-password" class="forgot-link">Forgot password?</a>
+          </div>
+          <mat-form-field appearance="outline" class="field-full">
+            <input matInput [type]="hidePass ? 'password' : 'text'" formControlName="password" autocomplete="current-password" />
+            <button mat-icon-button matSuffix type="button" (click)="hidePass = !hidePass" tabindex="-1">
+              <mat-icon>{{ hidePass ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-error *ngIf="form.get('password')?.hasError('required')">Password is required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="field-group" *ngIf="showTotp">
+          <label class="field-label">Two-factor code</label>
+          <mat-form-field appearance="outline" class="field-full">
+            <input matInput formControlName="totpCode" placeholder="6-digit code" maxlength="6" autocomplete="one-time-code" />
+          </mat-form-field>
+        </div>
+
+        <button class="submit-btn" type="submit" [disabled]="loading">
+          <mat-spinner diameter="18" *ngIf="loading"></mat-spinner>
+          <span *ngIf="!loading">Sign in</span>
+        </button>
+
+        <p class="alt-link">Don't have an account? <a routerLink="/register">Create one</a></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="hero-panel">
+    <div class="hero-content">
+      <div class="hero-badge">Training Performance Platform</div>
+      <h2 class="hero-title">Track, evaluate, and improve with data-driven insights</h2>
+      <p class="hero-sub">Gamified assessments, real-time analytics, and AI-powered blind spot detection for high-performance teams.</p>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-value">3x</span>
+          <span class="hero-stat-label">Faster evaluation</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-value">85%</span>
+          <span class="hero-stat-label">Completion rate</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-value">Real-time</span>
+          <span class="hero-stat-label">Live submission tracking</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
