@@ -1,0 +1,6 @@
+@SSPMS.API_HostAddress = http://localhost:5081
+
+GET {{SSPMS.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
