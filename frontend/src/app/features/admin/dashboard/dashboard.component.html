@@ -1,0 +1,87 @@
+<div class="page-header">
+  <h1>System Dashboard</h1>
+  <p>Platform-wide metrics and quick actions</p>
+</div>
+
+<div class="loading-center" *ngIf="loading"><mat-spinner diameter="36"></mat-spinner></div>
+
+<ng-container *ngIf="stats">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Total Users</div>
+          <div class="stat-value">{{ stats.totalUsers }}</div>
+        </div>
+        <div class="stat-icon primary"><mat-icon>people</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Trainers</div>
+          <div class="stat-value">{{ stats.totalTrainers }}</div>
+        </div>
+        <div class="stat-icon info"><mat-icon>person_pin</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Employees</div>
+          <div class="stat-value">{{ stats.totalEmployees }}</div>
+        </div>
+        <div class="stat-icon success"><mat-icon>badge</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Classes</div>
+          <div class="stat-value">{{ stats.totalClasses }}</div>
+        </div>
+        <div class="stat-icon warning"><mat-icon>school</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Tasks</div>
+          <div class="stat-value">{{ stats.totalTasks }}</div>
+        </div>
+        <div class="stat-icon primary"><mat-icon>assignment</mat-icon></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="stat-label">Submissions</div>
+          <div class="stat-value">{{ stats.totalSubmissions }}</div>
+        </div>
+        <div class="stat-icon success"><mat-icon>task_alt</mat-icon></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Quick Actions</h3></div>
+    <div class="quick-actions">
+      <a class="action-item" routerLink="/admin/users">
+        <div class="action-icon primary"><mat-icon>people</mat-icon></div>
+        <div class="action-label">Manage Users</div>
+      </a>
+      <a class="action-item" routerLink="/admin/classes">
+        <div class="action-icon warning"><mat-icon>school</mat-icon></div>
+        <div class="action-label">Manage Classes</div>
+      </a>
+      <a class="action-item" routerLink="/admin/reports">
+        <div class="action-icon info"><mat-icon>insert_chart</mat-icon></div>
+        <div class="action-label">System Reports</div>
+      </a>
+      <a class="action-item" routerLink="/admin/audit-log">
+        <div class="action-icon success"><mat-icon>manage_search</mat-icon></div>
+        <div class="action-label">Audit Log</div>
+      </a>
+    </div>
+  </div>
+</ng-container>

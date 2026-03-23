@@ -1,0 +1,65 @@
+.page { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px;
+  animation: slideInLeft 0.4s var(--ease-smooth) both;
+
+  .page-title { font-size: 1.375rem; font-weight: 800; color: var(--c-text-1); margin: 0 0 4px; letter-spacing: -0.03em; }
+  .page-sub { font-size: 0.875rem; color: var(--c-text-3); margin: 0; }
+}
+
+.filters-row {
+  display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+  animation: fadeInUp 0.4s var(--ease-smooth) 0.06s both;
+
+  .search-field { flex: 1; min-width: 200px; }
+  .filter-field { width: 160px; }
+}
+
+.full-width { width: 100%; }
+
+.loading-row { display: flex; justify-content: center; padding: 60px 0; }
+
+.user-cell { display: flex; align-items: center; gap: 10px; }
+
+.avatar-chip {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.8125rem; color: #fff; flex-shrink: 0;
+  position: relative; overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute; top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  &.role-admin    { background: var(--g-danger); box-shadow: 0 2px 8px rgba(220,38,38,0.32); }
+  &.role-trainer  { background: var(--g-primary); box-shadow: 0 2px 8px rgba(124,58,237,0.32); }
+  &.role-employee { background: linear-gradient(135deg, #60a5fa, #2563eb); box-shadow: 0 2px 8px rgba(37,99,235,0.32); }
+}
+
+.user-name { font-weight: 600; color: var(--c-text-1); }
+
+.role-select { font-size: 0.875rem; }
+
+.role-badge {
+  padding: 3px 10px; border-radius: 99px; font-size: 0.6875rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.03em;
+  &.admin { background: var(--c-danger-light); color: var(--c-danger); border: 1px solid rgba(220,38,38,0.2); }
+}
+
+.status-badge {
+  padding: 3px 10px; border-radius: 99px; font-size: 0.6875rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.03em;
+  &.active   { background: var(--c-success-light); color: var(--c-success); border: 1px solid rgba(22,163,74,0.2); }
+  &.inactive { background: var(--c-surface-2);     color: var(--c-text-3);  border: 1px solid var(--c-border); }
+}
+
+.empty-state {
+  text-align: center; padding: 60px; color: var(--c-text-3);
+  animation: fadeIn 0.5s var(--ease-smooth) both;
+  mat-icon { font-size: 52px; width: 52px; height: 52px; opacity: 0.4; margin-bottom: 8px; animation: float 5s ease-in-out infinite; }
+}

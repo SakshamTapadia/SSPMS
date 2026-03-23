@@ -1,0 +1,37 @@
+.page { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px;
+  .page-title { font-size: 1.5rem; font-weight: 700; color: var(--c-text-1); margin: 0 0 4px; }
+  .page-sub { font-size: 0.875rem; color: var(--c-text-3); margin: 0; }
+}
+
+.create-card { margin-bottom: 24px; }
+
+.create-form { display: flex; flex-direction: column; gap: 4px; padding-top: 8px; }
+
+.full-width { width: 100%; }
+
+.date-row { display: flex; gap: 16px; mat-form-field { flex: 1; } }
+
+.form-actions { display: flex; justify-content: flex-end; padding-top: 4px; }
+
+.loading-row { display: flex; justify-content: center; padding: 60px 0; }
+
+.empty-state {
+  text-align: center; padding: 80px 0; color: var(--c-text-3);
+  .empty-icon { font-size: 56px; width: 56px; height: 56px; margin-bottom: 12px; opacity: 0.4; }
+  p { font-size: 1rem; }
+}
+
+.class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+
+.class-card {
+  .dates { font-size: 0.8125rem; color: var(--c-text-3); margin: 4px 0 8px; }
+  .description { font-size: 0.875rem; color: var(--c-text-3); margin: 0 0 12px; line-height: 1.5; }
+  .stats-row { display: flex; gap: 16px; margin-bottom: 12px;
+    .stat { display: flex; align-items: center; gap: 4px; font-size: 0.8125rem; color: var(--c-text-2);
+      mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    }
+  }
+}

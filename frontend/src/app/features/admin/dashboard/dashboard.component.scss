@@ -1,0 +1,61 @@
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.action-item {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 22px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--c-surface);
+  position: relative; overflow: hidden;
+  transition: all 0.22s var(--ease-spring);
+  animation: scaleIn 0.35s var(--ease-spring) both;
+
+  &:nth-child(1) { animation-delay: 40ms; }
+  &:nth-child(2) { animation-delay: 90ms; }
+  &:nth-child(3) { animation-delay: 140ms; }
+  &:nth-child(4) { animation-delay: 190ms; }
+
+  &:hover {
+    border-color: rgba(99,102,241,0.35);
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 16px 40px -12px rgba(79,70,229,0.2), 0 4px 12px rgba(0,0,0,0.06);
+    text-decoration: none;
+
+    .action-icon { transform: scale(1.14) rotate(-5deg); }
+    .action-label { color: var(--c-primary); }
+  }
+}
+
+.action-icon {
+  width: 48px; height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.25s var(--ease-spring);
+  position: relative; overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute; top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  mat-icon { font-size: 22px; width: 22px; height: 22px; }
+
+  &.primary { background: var(--g-primary); color: #fff; box-shadow: 0 4px 14px rgba(79,70,229,0.38); }
+  &.success { background: var(--g-success); color: #fff; box-shadow: 0 4px 14px rgba(22,163,74,0.35); }
+  &.warning { background: var(--g-warning); color: #fff; box-shadow: 0 4px 14px rgba(217,119,6,0.35); }
+  &.info    { background: var(--g-info);    color: #fff; box-shadow: 0 4px 14px rgba(2,132,199,0.35); }
+}
+
+.action-label {
+  font-size: 0.8125rem; font-weight: 600; color: var(--c-text-1);
+  text-align: center; transition: color 0.18s;
+}
