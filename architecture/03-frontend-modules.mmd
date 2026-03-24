@@ -1,0 +1,52 @@
+graph TB
+    Router["Angular Router\nRoute Guards — AuthGuard and RoleGuard"]
+
+    subgraph Core["Core Module — Singleton Services"]
+        AuthSvc["AuthService\nJWT state · login · logout · refresh"]
+        ApiSvc["ApiService\nHTTP client for all endpoints"]
+        SigSvc["SignalRService\nReal-time notification stream"]
+        ProcSvc["ProctorService\nTab-switch detection · Camera"]
+        Intercept["AuthInterceptor\nInject Bearer token · Auto-refresh"]
+        Models["Models and DTOs\nAll TypeScript interfaces"]
+    end
+
+    subgraph AuthMod["Auth Feature"]
+        Login["LoginComponent"]
+        Register["RegisterComponent"]
+        ForgotPW["ForgotPasswordComponent"]
+        ResetPW["ResetPasswordComponent"]
+        VerifyEmail["VerifyEmailComponent"]
+    end
+
+    subgraph AdminMod["Admin Feature"]
+        AdminDash["DashboardComponent\nSystem stats"]
+        UserList["UserListComponent\nCreate · Edit · Deactivate"]
+        ClassList["ClassListComponent\nCreate · Archive"]
+        AuditLog["AuditLogComponent"]
+        AdminLayout["LayoutComponent\nSidebar + Hamburger"]
+    end
+
+    subgraph TrainerMod["Trainer Feature"]
+        TrainerDash["DashboardComponent"]
+        TaskList["TaskListComponent\nCreate · Publish · Delete"]
+        TaskEval["TaskEvaluateComponent\nWayground-style results grid\nQuestion pills · Participant modal"]
+        LB_T["LeaderboardComponent"]
+        TrainerLayout["LayoutComponent\nSidebar + Hamburger"]
+    end
+
+    subgraph EmpMod["Employee Feature"]
+        EmpDash["DashboardComponent\nXP · Badges · Streak"]
+        TaskAttempt["TaskAttemptComponent\nMCQ · Code editor · Proctor"]
+        TaskResult["TaskResultComponent"]
+        LB_E["LeaderboardComponent"]
+        EmpLayout["LayoutComponent\nSidebar + Hamburger"]
+    end
+
+    Router --> AuthMod
+    Router --> AdminMod
+    Router --> TrainerMod
+    Router --> EmpMod
+    AuthMod --> Core
+    AdminMod --> Core
+    TrainerMod --> Core
+    EmpMod --> Core

@@ -259,7 +259,7 @@ public class AnalyticsService : IAnalyticsService
             {
                 var answer = sub.Answers.FirstOrDefault(a => a.QuestionId == q.Id);
                 bool? isCorrect = null;
-                double? rawScore = answer?.RawScore;
+                double? rawScore = (double?)answer?.RawScore;
                 double maxScore = q.Marks;
 
                 if (q.Type == Domain.Enums.QuestionType.MCQ && answer != null)

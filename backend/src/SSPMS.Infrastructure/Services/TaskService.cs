@@ -1,3 +1,7 @@
+using System.Text;
+using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.EntityFrameworkCore;
 using SSPMS.Application.Common;
 using SSPMS.Application.DTOs.Tasks;
@@ -5,6 +9,7 @@ using SSPMS.Application.Interfaces;
 using SSPMS.Domain.Entities;
 using SSPMS.Domain.Enums;
 using SSPMS.Infrastructure.Data;
+using UglyToad.PdfPig;
 
 namespace SSPMS.Infrastructure.Services;
 
@@ -50,9 +55,13 @@ public class TaskService : ITaskService
     public async Task<ServiceResult<TaskDto>> CreateTaskAsync(CreateTaskRequest request, Guid trainerId)
     {
         var @class = await _db.Classes.FindAsync(request.ClassId);
-        if (@class == null || @class.TrainerId != trainerId)
-            return ServiceResult<TaskDto>.Failure("Class not found or access denied.");
+        if (@class == null) return ServiceResult<TaskDto>.Failure("Class not found.");
 
+        var isAdmin = await IsAdminAsync(trainerId);
+        if (!isAdmin && @class.TrainerId != trainerId)
+            return ServiceResult<TaskDto>.Failure("Access denied.");
+
+        var effectiveTrainerId = isAdmin ? @class.TrainerId : trainerId;
         var task = new AssignedTask
         {
             ClassId = request.ClassId,
@@ -63,7 +72,7 @@ public class TaskService : ITaskService
             EndAt = request.EndAt,
             DurationMinutes = request.DurationMinutes,
             Status = Domain.Enums.AssignmentStatus.Draft,
-            CreatedByTrainerId = trainerId
+            CreatedByTrainerId = effectiveTrainerId
         };
         _db.Tasks.Add(task);
         await _db.SaveChangesAsync();
@@ -75,7 +84,8 @@ public class TaskService : ITaskService
     public async Task<ServiceResult<TaskDto>> UpdateTaskAsync(Guid id, UpdateTaskRequest request, Guid trainerId)
     {
         var task = await _db.Tasks.Include(t => t.Class).Include(t => t.CreatedByTrainer).FirstOrDefaultAsync(t => t.Id == id);
-        if (task == null || task.CreatedByTrainerId != trainerId) return ServiceResult<TaskDto>.Failure("Not found or access denied.");
+        if (task == null) return ServiceResult<TaskDto>.Failure("Not found.");
+        if (task.CreatedByTrainerId != trainerId && !await IsAdminAsync(trainerId)) return ServiceResult<TaskDto>.Failure("Access denied.");
         if (task.Status != Domain.Enums.AssignmentStatus.Draft) return ServiceResult<TaskDto>.Failure("Cannot edit a published task.");
 
         task.Title = request.Title;
@@ -91,7 +101,8 @@ public class TaskService : ITaskService
     public async Task<ServiceResult> DeleteTaskAsync(Guid id, Guid trainerId)
     {
         var task = await _db.Tasks.FindAsync(id);
-        if (task == null || task.CreatedByTrainerId != trainerId) return ServiceResult.Failure("Not found.");
+        if (task == null) return ServiceResult.Failure("Not found.");
+        if (task.CreatedByTrainerId != trainerId && !await IsAdminAsync(trainerId)) return ServiceResult.Failure("Access denied.");
         if (task.Status != Domain.Enums.AssignmentStatus.Draft) return ServiceResult.Failure("Cannot delete a published task.");
         _db.Tasks.Remove(task);
         await _db.SaveChangesAsync();
@@ -101,7 +112,8 @@ public class TaskService : ITaskService
     public async Task<ServiceResult> PublishTaskAsync(Guid id, Guid trainerId)
     {
         var task = await _db.Tasks.Include(t => t.Questions).FirstOrDefaultAsync(t => t.Id == id);
-        if (task == null || task.CreatedByTrainerId != trainerId) return ServiceResult.Failure("Not found.");
+        if (task == null) return ServiceResult.Failure("Not found.");
+        if (task.CreatedByTrainerId != trainerId && !await IsAdminAsync(trainerId)) return ServiceResult.Failure("Access denied.");
         if (task.Status != Domain.Enums.AssignmentStatus.Draft) return ServiceResult.Failure("Task already published.");
         if (!task.Questions.Any()) return ServiceResult.Failure("Task must have at least one question.");
 
@@ -128,7 +140,8 @@ public class TaskService : ITaskService
     public async Task<ServiceResult<TaskDto>> DuplicateTaskAsync(Guid id, Guid trainerId)
     {
         var task = await _db.Tasks.Include(t => t.Questions).ThenInclude(q => q.Options).FirstOrDefaultAsync(t => t.Id == id);
-        if (task == null || task.CreatedByTrainerId != trainerId) return ServiceResult<TaskDto>.Failure("Not found.");
+        if (task == null) return ServiceResult<TaskDto>.Failure("Not found.");
+        if (task.CreatedByTrainerId != trainerId && !await IsAdminAsync(trainerId)) return ServiceResult<TaskDto>.Failure("Access denied.");
 
         var copy = new AssignedTask
         {
@@ -172,7 +185,8 @@ public class TaskService : ITaskService
     public async Task<ServiceResult<QuestionDto>> AddQuestionAsync(Guid taskId, CreateQuestionRequest request, Guid trainerId)
     {
         var task = await _db.Tasks.FindAsync(taskId);
-        if (task == null || task.CreatedByTrainerId != trainerId) return ServiceResult<QuestionDto>.Failure("Not found.");
+        if (task == null) return ServiceResult<QuestionDto>.Failure("Not found.");
+        if (task.CreatedByTrainerId != trainerId && !await IsAdminAsync(trainerId)) return ServiceResult<QuestionDto>.Failure("Access denied.");
         if (task.Status != Domain.Enums.AssignmentStatus.Draft) return ServiceResult<QuestionDto>.Failure("Cannot edit published task.");
 
         var question = new Question { TaskId = taskId, Type = request.Type, Stem = request.Stem, Marks = request.Marks, OrderIndex = request.OrderIndex, Language = request.Language, ExpectedOutput = request.ExpectedOutput };
@@ -192,8 +206,9 @@ public class TaskService : ITaskService
     public async Task<ServiceResult<QuestionDto>> UpdateQuestionAsync(Guid taskId, Guid questionId, CreateQuestionRequest request, Guid trainerId)
     {
         var task = await _db.Tasks.FindAsync(taskId);
-        if (task == null || task.CreatedByTrainerId != trainerId || task.Status != Domain.Enums.AssignmentStatus.Draft)
-            return ServiceResult<QuestionDto>.Failure("Not found or access denied.");
+        if (task == null) return ServiceResult<QuestionDto>.Failure("Not found.");
+        if ((task.CreatedByTrainerId != trainerId && !await IsAdminAsync(trainerId)) || task.Status != Domain.Enums.AssignmentStatus.Draft)
+            return ServiceResult<QuestionDto>.Failure("Access denied or task is not a draft.");
 
         var question = await _db.Questions.Include(q => q.Options).FirstOrDefaultAsync(q => q.Id == questionId && q.TaskId == taskId);
         if (question == null) return ServiceResult<QuestionDto>.Failure("Question not found.");
@@ -239,6 +254,156 @@ public class TaskService : ITaskService
         await _db.SaveChangesAsync();
         return ServiceResult.Success();
     }
+
+    public async Task<ServiceResult<IEnumerable<QuestionDto>>> ImportQuestionsFromDocumentAsync(
+        Guid taskId, Stream fileStream, string fileName, Guid requesterId)
+    {
+        var task = await _db.Tasks.FindAsync(taskId);
+        if (task == null) return ServiceResult<IEnumerable<QuestionDto>>.Failure("Task not found.");
+        if (task.CreatedByTrainerId != requesterId && !await IsAdminAsync(requesterId))
+            return ServiceResult<IEnumerable<QuestionDto>>.Failure("Access denied.");
+        if (task.Status != Domain.Enums.AssignmentStatus.Draft)
+            return ServiceResult<IEnumerable<QuestionDto>>.Failure("Cannot edit a published task.");
+
+        string text;
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        try
+        {
+            text = ext == ".pdf" ? ExtractPdfText(fileStream) : ExtractDocxText(fileStream);
+        }
+        catch (Exception ex)
+        {
+            return ServiceResult<IEnumerable<QuestionDto>>.Failure($"Failed to read document: {ex.Message}");
+        }
+
+        var parsed = ParseMcqQuestions(text);
+        if (parsed.Count == 0)
+            return ServiceResult<IEnumerable<QuestionDto>>.Failure(
+                "No MCQ questions found. Ensure the document uses the format: question line, A) B) C) D) options, Answer: X");
+
+        var existing = await _db.Questions.Where(q => q.TaskId == taskId).CountAsync();
+        var added = new List<QuestionDto>();
+        int order = existing;
+
+        foreach (var (stem, options, correctLetter) in parsed)
+        {
+            var q = new Question
+            {
+                TaskId = taskId,
+                Type = QuestionType.MCQ,
+                Stem = stem,
+                Marks = 10,
+                OrderIndex = order++
+            };
+            char correct = char.ToUpperInvariant(correctLetter);
+            for (int i = 0; i < options.Count; i++)
+            {
+                char letter = (char)('A' + i);
+                q.Options.Add(new MCQOption { OptionText = options[i], IsCorrect = letter == correct, OrderIndex = i });
+            }
+            _db.Questions.Add(q);
+            added.Add(new QuestionDto(q.Id, q.TaskId, q.Type, q.Stem, q.Marks, q.OrderIndex, null,
+                q.Options.Select(o => new MCQOptionDto(o.Id, o.OptionText, o.OrderIndex, o.IsCorrect))));
+        }
+
+        await _db.SaveChangesAsync();
+        return ServiceResult<IEnumerable<QuestionDto>>.Success(added);
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────
+
+    private static string ExtractPdfText(Stream stream)
+    {
+        var sb = new StringBuilder();
+        using var doc = PdfDocument.Open(stream);
+        foreach (var page in doc.GetPages())
+            sb.AppendLine(page.Text);
+        return sb.ToString();
+    }
+
+    private static string ExtractDocxText(Stream stream)
+    {
+        var sb = new StringBuilder();
+        using var doc = WordprocessingDocument.Open(stream, false);
+        var body = doc.MainDocumentPart?.Document?.Body;
+        if (body == null) return string.Empty;
+        foreach (var para in body.Descendants<Paragraph>())
+            sb.AppendLine(para.InnerText);
+        return sb.ToString();
+    }
+
+    // Parses blocks like:
+    //   1. Question text
+    //   A) Option A   B) Option B   C) Option C   D) Option D
+    //   Answer: B
+    private static List<(string Stem, List<string> Options, char Correct)> ParseMcqQuestions(string text)
+    {
+        var results = new List<(string, List<string>, char)>();
+        // Normalise line endings
+        text = text.Replace("\r\n", "\n").Replace("\r", "\n");
+        var lines = text.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
+
+        var qLine = new Regex(@"^(\d+[\.\)])\s+(.+)$");
+        var optLine = new Regex(@"[A-Da-d][\.\)]\s*([^A-Da-d\.\)]+?)(?=\s+[A-Da-d][\.\)]|$)", RegexOptions.IgnoreCase);
+        var ansLine = new Regex(@"^[Aa]nswer\s*[:\-]\s*([A-Da-d])", RegexOptions.IgnoreCase);
+        var singleOpt = new Regex(@"^([A-Da-d])[\.\)]\s+(.+)$", RegexOptions.IgnoreCase);
+
+        string? stem = null;
+        List<string>? opts = null;
+
+        for (int i = 0; i < lines.Count; i++)
+        {
+            var line = lines[i];
+
+            // Question line
+            var qm = qLine.Match(line);
+            if (qm.Success)
+            {
+                stem = qm.Groups[2].Value.Trim();
+                opts = null;
+                continue;
+            }
+
+            if (stem == null) continue;
+
+            // Options may be on one line (A) ... B) ... C) ... D) ...) or separate lines
+            if (opts == null)
+            {
+                // Try separate option line
+                var sm = singleOpt.Match(line);
+                if (sm.Success)
+                {
+                    opts = new List<string> { sm.Groups[2].Value.Trim() };
+                    continue;
+                }
+                // Try all-on-one-line
+                var allOpts = optLine.Matches(line);
+                if (allOpts.Count >= 2)
+                {
+                    opts = allOpts.Select(m => m.Groups[1].Value.Trim()).ToList();
+                    continue;
+                }
+            }
+            else if (opts.Count < 4)
+            {
+                var sm = singleOpt.Match(line);
+                if (sm.Success) { opts.Add(sm.Groups[2].Value.Trim()); continue; }
+            }
+
+            // Answer line
+            var am = ansLine.Match(line);
+            if (am.Success && stem != null && opts != null && opts.Count >= 2)
+            {
+                results.Add((stem, opts, am.Groups[1].Value[0]));
+                stem = null; opts = null;
+            }
+        }
+
+        return results;
+    }
+
+    private async Task<bool> IsAdminAsync(Guid userId) =>
+        await _db.Users.AnyAsync(u => u.Id == userId && u.Role == Domain.Enums.UserRole.Admin);
 
     private static TaskDto MapDto(AssignedTask t) => new(
         t.Id, t.ClassId, t.Class?.Name ?? "", t.Title, t.Description, t.Instructions,

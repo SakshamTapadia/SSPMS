@@ -30,6 +30,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
 
   readonly questionTypes: QuestionType[] = ['MCQ', 'Code', 'Assessment', 'Link'];
   readonly languages = ['javascript', 'python', 'java', 'csharp', 'cpp', 'sql', 'other'];
+  importing = false;
 
   get totalMarks(): number { return this.questions.reduce((s, q) => s + q.marks, 0); }
   get optionsArray(): FormArray { return this.qForm.get('options') as FormArray; }
@@ -239,6 +240,26 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
       error: err => {
         this.snack.open(err?.error?.message ?? 'Failed to save question.', 'Close', { duration: 4000 });
         this.savingQ = false;
+      }
+    });
+  }
+
+  importFromDocument(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.importing = true;
+    this.api.importQuestionsFromDocument(this.taskId, file).subscribe({
+      next: imported => {
+        this.loadQuestions();
+        this.snack.open(`${imported.length} question(s) imported successfully!`, '', { duration: 3500 });
+        this.importing = false;
+        input.value = '';
+      },
+      error: err => {
+        this.snack.open(err?.error?.message ?? 'Failed to import questions.', 'Close', { duration: 5000 });
+        this.importing = false;
+        input.value = '';
       }
     });
   }

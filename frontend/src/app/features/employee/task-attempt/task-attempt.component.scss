@@ -199,6 +199,22 @@
   padding: 2px 7px; border-radius: 999px; margin-left: 4px;
 }
 
+// ─── Mobile responsive ────────────────────────────────────────────
+@media (max-width: 640px) {
+  .attempt-header { padding: 10px 14px; gap: 12px; }
+  .timer { font-size: 1.125rem; }
+  .attempt-actions { width: 100%; justify-content: flex-end; }
+
+  .proctor-card { padding: 28px 20px; }
+
+  .question-body { padding: 14px; }
+  .stem { font-size: 0.875rem; }
+
+  .code-editor { font-size: 0.8125rem; }
+
+  .camera-pip { width: 100px; height: 76px; bottom: 12px; right: 12px; }
+}
+
 // ── Camera PiP ────────────────────────────────────────────────────
 .camera-pip {
   position: fixed;

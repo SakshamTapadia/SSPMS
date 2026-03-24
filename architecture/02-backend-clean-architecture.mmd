@@ -1,0 +1,57 @@
+graph TB
+    subgraph DOMAIN["SSPMS.Domain — Core Business Layer"]
+        ENT["Entities: User · TrainingClass · ClassEnrollment · AssignedTask<br/>Question · MCQOption · Submission · SubmissionAnswer<br/>Badge · EmployeeBadge · XPLedger · Notification<br/>Announcement · RefreshToken · PasswordResetOTP · AuditLog"]
+        ENUMS["Enums: UserRole · AssignmentStatus · SubmissionStatus<br/>QuestionType · EnrollmentStatus · NotificationType · XPSource"]
+    end
+
+    subgraph INFRA["SSPMS.Infrastructure — Implementation Layer"]
+        S1["AuthService — JWT · BCrypt · TOTP · Google OAuth"]
+        S2["UserService — CRUD · Bulk CSV Import"]
+        S3["TaskService — CRUD · Questions · Reorder"]
+        S4["ClassService — Enrollment · Transfers"]
+        S5["SubmissionService — Draft · Submit · Evaluate · Malpractice"]
+        S6["AnalyticsService — Blind Spots · Code Similarity · Velocity"]
+        S7["GamificationService — XP · Badges · Leaderboard · Multipliers"]
+        S8["ReportService — PDF and Excel Exports"]
+        S9["NotificationService — In-App and Email"]
+        S10["AuditService — Compliance Logging"]
+        S11["EmailService — MailKit · Gmail SMTP"]
+        EF["ApplicationDbContext — EF Core 9"]
+    end
+
+    subgraph APP["SSPMS.Application — Use Cases Layer"]
+        I1["IAuthService"]
+        I2["IUserService"]
+        I3["ITaskService"]
+        I4["IClassService"]
+        I5["ISubmissionService"]
+        I6["IAnalyticsService"]
+        I7["IGamificationService"]
+        I8["IReportService"]
+        I9["INotificationService"]
+        I10["IAuditService"]
+        I11["IEmailService"]
+        DTOs["DTOs and Request Models"]
+    end
+
+    subgraph PRES["SSPMS.API — Presentation Layer"]
+        MW["Middleware: JWT Auth · CORS · Rate Limiter · Exception Handler"]
+        C1["AuthController"]
+        C2["UsersController"]
+        C3["TasksController"]
+        C4["ClassesController"]
+        C5["SubmissionsController"]
+        C6["AnalyticsController"]
+        C7["BadgesController"]
+        C8["LeaderboardsController"]
+        C9["ReportsController"]
+        C10["NotificationsController"]
+        C11["AdminController"]
+        H1["NotificationHub (SignalR)"]
+        H2["SubmissionHub (SignalR)"]
+        BG["ExpiredSubmissionsJob (Background)"]
+    end
+
+    PRES -->|"calls via DI"| APP
+    APP -->|"implemented by"| INFRA
+    INFRA -->|"uses entities"| DOMAIN

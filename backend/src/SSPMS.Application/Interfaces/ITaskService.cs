@@ -18,4 +18,5 @@ public interface ITaskService
     Task<ServiceResult<QuestionDto>> UpdateQuestionAsync(Guid taskId, Guid questionId, CreateQuestionRequest request, Guid trainerId);
     Task<ServiceResult> DeleteQuestionAsync(Guid taskId, Guid questionId, Guid trainerId);
     Task<ServiceResult> ReorderQuestionsAsync(Guid taskId, IEnumerable<Guid> questionIds, Guid trainerId);
+    Task<ServiceResult<IEnumerable<QuestionDto>>> ImportQuestionsFromDocumentAsync(Guid taskId, Stream fileStream, string fileName, Guid requesterId);
 }

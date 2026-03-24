@@ -91,9 +91,17 @@
           </h2>
           <span class="qs-sub" *ngIf="questions.length">Total: {{ totalMarks }} marks</span>
         </div>
-        <button mat-raised-button color="primary" (click)="openAddQuestion()" *ngIf="isDraft">
-          <mat-icon>add</mat-icon> Add Question
-        </button>
+        <div class="qs-actions" *ngIf="isDraft">
+          <button mat-raised-button color="primary" (click)="openAddQuestion()">
+            <mat-icon>add</mat-icon> Add Question
+          </button>
+          <button mat-stroked-button (click)="importInput.click()" [disabled]="importing" matTooltip="Import MCQ questions from a PDF or DOCX file">
+            <mat-spinner *ngIf="importing" diameter="16" style="display:inline-block;margin-right:6px"></mat-spinner>
+            <mat-icon *ngIf="!importing">upload_file</mat-icon>
+            {{ importing ? 'Importing…' : 'Import from PDF/DOCX' }}
+          </button>
+          <input #importInput type="file" accept=".pdf,.docx" style="display:none" (change)="importFromDocument($event)">
+        </div>
       </div>
 
       <!-- Empty state -->

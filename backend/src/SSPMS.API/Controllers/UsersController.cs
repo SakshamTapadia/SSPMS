@@ -15,10 +15,14 @@ public class UsersController : BaseController
     private readonly IUserService _users;
     public UsersController(IUserService users) => _users = users;
 
-    [HttpGet, Authorize(Roles = "Admin")]
+    [HttpGet, Authorize(Roles = "Admin,Trainer")]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
         [FromQuery] string? search = null, [FromQuery] UserRole? role = null, [FromQuery] bool? isActive = null)
-        => Ok(await _users.GetUsersAsync(page, pageSize, search, role, isActive));
+    {
+        // Trainers may only see employees (not other trainers or admins)
+        if (CurrentUserRole == "Trainer") role = UserRole.Employee;
+        return Ok(await _users.GetUsersAsync(page, pageSize, search, role, isActive));
+    }
 
     [HttpGet("me")]
     public async Task<IActionResult> GetMe()

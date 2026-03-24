@@ -1,27 +1,34 @@
 <div class="app-shell">
-  <aside class="sidebar">
+  <!-- Mobile overlay -->
+  <div class="sidebar-overlay" [class.open]="sidebarOpen" (click)="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.open]="sidebarOpen">
     <div class="sidebar-brand">
       <div class="brand-logo">S</div>
       <div class="brand-text">
         <span class="brand-name">SSPMS</span>
         <span class="brand-role">Employee</span>
       </div>
+      <button class="sidebar-close-btn" (click)="closeSidebar()">
+        <mat-icon>close</mat-icon>
+      </button>
     </div>
 
     <nav class="sidebar-nav">
-      <a class="nav-item" routerLink="dashboard" routerLinkActive="active">
+      <a class="nav-item" routerLink="dashboard" routerLinkActive="active" (click)="closeSidebar()">
         <mat-icon class="nav-icon">grid_view</mat-icon>
         <span>Dashboard</span>
       </a>
-      <a class="nav-item" routerLink="tasks" routerLinkActive="active">
+      <a class="nav-item" routerLink="tasks" routerLinkActive="active" (click)="closeSidebar()">
         <mat-icon class="nav-icon">assignment</mat-icon>
         <span>My Tasks</span>
       </a>
-      <a class="nav-item" routerLink="leaderboard" routerLinkActive="active">
+      <a class="nav-item" routerLink="leaderboard" routerLinkActive="active" (click)="closeSidebar()">
         <mat-icon class="nav-icon">bar_chart</mat-icon>
         <span>Leaderboard</span>
       </a>
-      <a class="nav-item" routerLink="reports" routerLinkActive="active">
+      <a class="nav-item" routerLink="reports" routerLinkActive="active" (click)="closeSidebar()">
         <mat-icon class="nav-icon">insert_chart</mat-icon>
         <span>My Reports</span>
       </a>
@@ -47,10 +54,13 @@
   <div class="main-area">
     <header class="topbar">
       <div class="topbar-left">
+        <button class="hamburger-btn" (click)="toggleSidebar()">
+          <mat-icon>menu</mat-icon>
+        </button>
         <span class="page-breadcrumb">Employee Portal</span>
       </div>
       <div class="topbar-right">
-        <button class="topbar-btn" [class.has-badge]="unreadCount > 0" title="Notifications" (click)="openNotifications()">
+        <button class="topbar-btn" (click)="openNotifications()" title="Notifications">
           <mat-icon [matBadge]="unreadCount > 0 ? unreadCount : null" matBadgeSize="small" matBadgeColor="warn">
             notifications
           </mat-icon>

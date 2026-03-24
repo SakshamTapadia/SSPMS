@@ -12,6 +12,7 @@ using SSPMS.Application.DTOs.Auth;
 using SSPMS.Application.Interfaces;
 using SSPMS.Domain.Entities;
 using SSPMS.Infrastructure.Data;
+using Microsoft.Extensions.Logging;
 using BC = BCrypt.Net.BCrypt;
 
 namespace SSPMS.Infrastructure.Services;
@@ -22,13 +23,15 @@ public class AuthService : IAuthService
     private readonly IConfiguration _config;
     private readonly IEmailService _email;
     private readonly IAuditService _audit;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(ApplicationDbContext db, IConfiguration config, IEmailService email, IAuditService audit)
+    public AuthService(ApplicationDbContext db, IConfiguration config, IEmailService email, IAuditService audit, ILogger<AuthService> logger)
     {
         _db = db;
         _config = config;
         _email = email;
         _audit = audit;
+        _logger = logger;
     }
 
     public async Task<ServiceResult<RegisterResponse>> RegisterAsync(RegisterRequest request, string ipAddress)
@@ -64,13 +67,6 @@ public class AuthService : IAuthService
         {
             await _audit.LogAsync(null, "Login.Failed", ipAddress: ipAddress);
             return ServiceResult<AuthResponse>.Failure("Invalid email or password.");
-        }
-
-        if (!user.IsEmailVerified)
-        {
-            // Resend OTP silently
-            await SendVerificationOtpAsync(user);
-            return ServiceResult<AuthResponse>.Failure("EMAIL_NOT_VERIFIED");
         }
 
         if (user.TwoFAEnabled)
@@ -224,7 +220,8 @@ public class AuthService : IAuthService
             ExpiresAt = DateTime.UtcNow.AddMinutes(15)
         });
         await _db.SaveChangesAsync();
-        try { await _email.SendOtpEmailAsync(user.Email, user.Name, otp); } catch { /* email unavailable in dev */ }
+        try { await _email.SendOtpEmailAsync(user.Email, user.Name, otp); }
+        catch (Exception ex) { _logger.LogError(ex, "Failed to send password reset OTP to {Email}", user.Email); throw; }
         return ServiceResult.Success();
     }
 
@@ -330,7 +327,9 @@ public class AuthService : IAuthService
             ExpiresAt = DateTime.UtcNow.AddMinutes(15)
         });
         await _db.SaveChangesAsync();
-        try { await _email.SendEmailVerificationOtpAsync(user.Email, user.Name, otp); } catch { /* email unavailable in dev */ }
+        try { await _email.SendEmailVerificationOtpAsync(user.Email, user.Name, otp); }
+        catch (Exception ex) { _logger.LogError(ex, "Failed to send verification OTP to {Email}", user.Email); }
+        // Email failure is non-fatal — OTP is already saved in DB; user can request a resend.
     }
 
     private async Task<AuthResponse> GenerateAuthResponseAsync(User user, string ipAddress)

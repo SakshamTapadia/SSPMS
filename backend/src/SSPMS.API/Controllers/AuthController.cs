@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using SSPMS.Application.DTOs.Auth;
 using SSPMS.Application.Interfaces;
+using SSPMS.Domain.Enums;
 
 namespace SSPMS.API.Controllers;
 
@@ -9,7 +11,8 @@ namespace SSPMS.API.Controllers;
 public class AuthController : BaseController
 {
     private readonly IAuthService _auth;
-    public AuthController(IAuthService auth) => _auth = auth;
+    private readonly IEmailService _email;
+    public AuthController(IAuthService auth, IEmailService email) { _auth = auth; _email = email; }
 
     [HttpPost("register"), AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
@@ -72,7 +75,13 @@ public class AuthController : BaseController
     [HttpPost("forgot-password"), AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        await _auth.ForgotPasswordAsync(request.Email);
+        try { await _auth.ForgotPasswordAsync(request.Email); }
+        catch (Exception ex)
+        {
+            // OTP was saved — email delivery failed. Log and return success so we don't leak info.
+            var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+            logger.LogError(ex, "Email delivery failed for forgot-password: {Email}", request.Email);
+        }
         return Ok(new { message = "If that email exists, an OTP has been sent." });
     }
 
@@ -116,5 +125,22 @@ public class AuthController : BaseController
     {
         var result = await _auth.Disable2FAAsync(CurrentUserId, password);
         return result.Succeeded ? Ok(new { message = "2FA disabled." }) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>Admin-only: sends a test email to verify SMTP config.</summary>
+    [HttpPost("test-email"), Authorize(Roles = "Admin")]
+    public async Task<IActionResult> TestEmail([FromQuery] string? to)
+    {
+        var target = to ?? CurrentUserEmail;
+        try
+        {
+            await _email.SendAsync(target, "SSPMS SMTP Test",
+                "<h2>SMTP test passed!</h2><p>If you see this, email delivery is working correctly.</p>");
+            return Ok(new { message = $"Test email sent to {target}." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "SMTP failed.", error = ex.Message, inner = ex.InnerException?.Message });
+        }
     }
 }

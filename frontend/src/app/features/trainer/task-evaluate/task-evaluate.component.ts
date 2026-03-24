@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
-import { SubmissionDto, SubmissionSummary, QuestionDto, TaskBlindSpotReport, CodeSimilarityReport, TaskResultsGrid, GridAnswerCell } from '../../../core/models';
+import { SubmissionDto, SubmissionSummary, QuestionDto, TaskBlindSpotReport, CodeSimilarityReport, TaskResultsGrid, GridAnswerCell, GridParticipantRow } from '../../../core/models';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 type MainTab = 'evaluate' | 'overview' | 'analytics';

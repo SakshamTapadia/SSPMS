@@ -33,30 +33,49 @@ public class ClassesController : BaseController
         return result.Succeeded ? Ok(result.Data) : NotFound(new { message = result.Error });
     }
 
-    [HttpPost, Authorize(Roles = "Admin")]
+    [HttpPost, Authorize(Roles = "Admin,Trainer")]
     public async Task<IActionResult> Create([FromBody] CreateClassRequest request)
     {
-        var result = await _classes.CreateClassAsync(request);
+        // Trainers always own the class they create — override TrainerId with their own ID
+        var req = CurrentUserRole == "Trainer" ? request with { TrainerId = CurrentUserId } : request;
+        var result = await _classes.CreateClassAsync(req);
         return result.Succeeded ? CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result.Data) : BadRequest(new { message = result.Error });
     }
 
-    [HttpPut("{id:guid}"), Authorize(Roles = "Admin")]
+    [HttpPut("{id:guid}"), Authorize(Roles = "Admin,Trainer")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateClassRequest request)
     {
+        // Trainers can only update their own classes
+        if (CurrentUserRole == "Trainer")
+        {
+            var check = await _classes.GetByIdAsync(id, CurrentUserId, CurrentUserRole);
+            if (!check.Succeeded) return Forbid();
+            request = request with { TrainerId = CurrentUserId };
+        }
         var result = await _classes.UpdateClassAsync(id, request);
         return result.Succeeded ? Ok(result.Data) : BadRequest(new { message = result.Error });
     }
 
-    [HttpPatch("{id:guid}/archive"), Authorize(Roles = "Admin")]
+    [HttpPatch("{id:guid}/archive"), Authorize(Roles = "Admin,Trainer")]
     public async Task<IActionResult> Archive(Guid id)
     {
+        if (CurrentUserRole == "Trainer")
+        {
+            var check = await _classes.GetByIdAsync(id, CurrentUserId, CurrentUserRole);
+            if (!check.Succeeded) return Forbid();
+        }
         var result = await _classes.ArchiveClassAsync(id);
         return result.Succeeded ? NoContent() : BadRequest(new { message = result.Error });
     }
 
-    [HttpDelete("{id:guid}"), Authorize(Roles = "Admin")]
+    [HttpDelete("{id:guid}"), Authorize(Roles = "Admin,Trainer")]
     public async Task<IActionResult> Delete(Guid id)
     {
+        if (CurrentUserRole == "Trainer")
+        {
+            var check = await _classes.GetByIdAsync(id, CurrentUserId, CurrentUserRole);
+            if (!check.Succeeded) return Forbid();
+        }
         var result = await _classes.DeleteClassAsync(id);
         return result.Succeeded ? NoContent() : BadRequest(new { message = result.Error });
     }

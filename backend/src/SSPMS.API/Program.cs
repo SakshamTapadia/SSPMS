@@ -26,11 +26,12 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "SSPMS API", Version = "v1", Description = "SmartSkill Performance Monitoring System API" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization. Enter: Bearer {token}",
+        Description = "Paste your JWT access token here (no 'Bearer ' prefix needed — Swagger adds it automatically).",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {{
@@ -96,19 +97,37 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await db.Database.MigrateAsync();
 
-    // Bootstrap: create default admin if none exists
-    if (!await db.Users.AnyAsync(u => u.Role == UserRole.Admin))
+    // Bootstrap: ensure sakshamtapadia02@gmail.com exists as admin
+    const string adminEmail = "sakshamtapadia02@gmail.com";
+    var existingAdmin = await db.Users.FirstOrDefaultAsync(u => u.Role == UserRole.Admin);
+    if (existingAdmin == null)
     {
         db.Users.Add(new User
         {
-            Name = "System Admin",
-            Email = "admin@sspms.com",
+            Name = "Saksham Tapadia",
+            Email = adminEmail,
             PasswordHash = BC.HashPassword("Admin@1234"),
             Role = UserRole.Admin,
-            IsActive = true
+            IsActive = true,
+            IsEmailVerified = true
         });
-        await db.SaveChangesAsync();
     }
+    else
+    {
+        // Always sync email, name, password and verified flag for the admin account
+        existingAdmin.Email = adminEmail;
+        existingAdmin.Name = "Saksham Tapadia";
+        existingAdmin.PasswordHash = BC.HashPassword("Admin@1234");
+        existingAdmin.IsActive = true;
+        existingAdmin.IsEmailVerified = true;
+    }
+    await db.SaveChangesAsync();
+
+    // ── Dev seed: 1 extra admin, 2 trainers, 50 employees ────────────────
+    // Runs automatically whenever there are no non-admin users in the DB.
+    var nonAdminCount = await db.Users.CountAsync(u => u.Role != UserRole.Admin);
+    if (nonAdminCount == 0)
+        await SeedDevDataAsync(db);
 }
 
 // ─── Middleware pipeline ──────────────────────────────────────────────
@@ -160,4 +179,74 @@ public class ExpiredSubmissionsJob : BackgroundService
     }
 }
 
-public partial class Program { }
+public partial class Program
+{
+    static async Task SeedDevDataAsync(ApplicationDbContext db)
+    {
+        // Clear dependent tables in FK-safe order before inserting users
+        await db.PasswordResetOTPs.ExecuteDeleteAsync();
+        await db.RefreshTokens.ExecuteDeleteAsync();
+        await db.AuditLogs.ExecuteDeleteAsync();
+        await db.Notifications.ExecuteDeleteAsync();
+        await db.XPLedger.ExecuteDeleteAsync();
+        await db.EmployeeBadges.ExecuteDeleteAsync();
+        await db.SubmissionAnswers.ExecuteDeleteAsync();
+        await db.Submissions.ExecuteDeleteAsync();
+        await db.MCQOptions.ExecuteDeleteAsync();
+        await db.Questions.ExecuteDeleteAsync();
+        await db.Announcements.ExecuteDeleteAsync();
+        await db.ClassEnrollments.ExecuteDeleteAsync();
+        await db.Tasks.ExecuteDeleteAsync();
+        await db.Classes.ExecuteDeleteAsync();
+        await db.Users.Where(u => u.Role != UserRole.Admin).ExecuteDeleteAsync();
+
+        var adminPw   = BC.HashPassword("Admin@1234");
+        var trainerPw = BC.HashPassword("Trainer@1234");
+        var empPw     = BC.HashPassword("Employee@1234");
+
+        // ── Second admin ────────────────────────────────────────────────
+        db.Users.Add(new User
+        {
+            Name = "Benhar Charles", Email = "benhar.charles@sspms.com",
+            PasswordHash = adminPw, Role = UserRole.Admin,
+            IsActive = true, IsEmailVerified = true
+        });
+
+        // ── 2 Trainers ──────────────────────────────────────────────────
+        db.Users.AddRange(
+            new User { Name = "Priya Sharma",  Email = "priya.sharma@sspms.com",  PasswordHash = trainerPw, Role = UserRole.Trainer, IsActive = true, IsEmailVerified = true },
+            new User { Name = "Rahul Verma",   Email = "rahul.verma@sspms.com",   PasswordHash = trainerPw, Role = UserRole.Trainer, IsActive = true, IsEmailVerified = true }
+        );
+
+        // ── 50 Employees ─────────────────────────────────────────────────
+        var employeeNames = new[]
+        {
+            "Aarav Kumar",     "Arjun Singh",      "Vivek Patel",      "Rohit Sharma",    "Amit Gupta",
+            "Karan Mehta",     "Nikhil Joshi",     "Siddharth Nair",   "Akash Yadav",     "Pranav Malhotra",
+            "Suresh Iyer",     "Deepak Rajput",    "Vijay Chaudhary",  "Ankit Pandey",    "Harish Tiwari",
+            "Manish Bose",     "Rajesh Mishra",    "Vishal Agarwal",   "Gaurav Srivastava","Ravi Chatterjee",
+            "Naveen Pillai",   "Sanjay Rao",       "Ashish Banerjee",  "Mohit Dixit",     "Piyush Kumar",
+            "Ananya Sharma",   "Pooja Verma",      "Sneha Patel",      "Divya Singh",     "Neha Gupta",
+            "Riya Mehta",      "Prerna Joshi",     "Swati Nair",       "Kavya Yadav",     "Ishita Malhotra",
+            "Meera Iyer",      "Tanvi Rajput",     "Sakshi Chaudhary", "Nisha Pandey",    "Preeti Tiwari",
+            "Shruti Bose",     "Ankita Mishra",    "Komal Agarwal",    "Simran Srivastava","Payal Chatterjee",
+            "Madhuri Pillai",  "Archana Rao",      "Deepika Banerjee", "Ritika Dixit",    "Sunita Kumar"
+        };
+
+        for (int i = 0; i < employeeNames.Length; i++)
+        {
+            var slug = employeeNames[i].ToLower().Replace(" ", ".");
+            db.Users.Add(new User
+            {
+                Name = employeeNames[i],
+                Email = $"{slug}@sspms.com",
+                PasswordHash = empPw,
+                Role = UserRole.Employee,
+                IsActive = true,
+                IsEmailVerified = true
+            });
+        }
+
+        await db.SaveChangesAsync();
+    }
+}

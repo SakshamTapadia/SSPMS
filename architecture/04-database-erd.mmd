@@ -1,0 +1,139 @@
+erDiagram
+    User ||--o{ TrainingClass : "trains"
+    User ||--o{ ClassEnrollment : "enrolled in"
+    User ||--o{ AssignedTask : "creates"
+    User ||--o{ Submission : "submits"
+    User ||--o{ EmployeeBadge : "earns"
+    User ||--o{ XPLedger : "accumulates XP"
+    User ||--o{ Notification : "receives"
+    User ||--o{ RefreshToken : "has"
+    User ||--o{ PasswordResetOTP : "requests"
+    User ||--o{ AuditLog : "generates"
+    TrainingClass ||--o{ ClassEnrollment : "has"
+    TrainingClass ||--o{ AssignedTask : "contains"
+    TrainingClass ||--o{ Announcement : "publishes"
+    AssignedTask ||--o{ Question : "has"
+    AssignedTask ||--o{ Submission : "receives"
+    Question ||--o{ MCQOption : "has options"
+    Question ||--o{ SubmissionAnswer : "answered in"
+    Submission ||--o{ SubmissionAnswer : "contains"
+    Badge ||--o{ EmployeeBadge : "awarded as"
+
+    User {
+        uuid Id PK
+        string Name
+        string Email UK
+        string PasswordHash
+        int Role
+        boolean IsEmailVerified
+        boolean TwoFAEnabled
+        string GoogleId
+    }
+    TrainingClass {
+        uuid Id PK
+        string Name
+        uuid TrainerId FK
+        boolean IsArchived
+        date StartDate
+        date EndDate
+    }
+    ClassEnrollment {
+        uuid Id PK
+        uuid EmployeeId FK
+        uuid ClassId FK
+        int Status
+    }
+    AssignedTask {
+        uuid Id PK
+        uuid ClassId FK
+        uuid CreatedByTrainerId FK
+        string Title
+        int Status
+        datetime StartAt
+        datetime EndAt
+        int DurationMinutes
+    }
+    Question {
+        uuid Id PK
+        uuid TaskId FK
+        int Type
+        string Stem
+        int Marks
+        int OrderIndex
+    }
+    MCQOption {
+        uuid Id PK
+        uuid QuestionId FK
+        string Text
+        boolean IsCorrect
+    }
+    Submission {
+        uuid Id PK
+        uuid TaskId FK
+        uuid EmployeeId FK
+        int Status
+        int SubmissionRank
+        decimal Multiplier
+        decimal TotalFinalScore
+        boolean IsMalpractice
+    }
+    SubmissionAnswer {
+        uuid Id PK
+        uuid SubmissionId FK
+        uuid QuestionId FK
+        string AnswerText
+        decimal RawScore
+        boolean IsPlagiarized
+    }
+    Badge {
+        uuid Id PK
+        string Name
+        string Criteria
+    }
+    EmployeeBadge {
+        uuid Id PK
+        uuid EmployeeId FK
+        uuid BadgeId FK
+        datetime AwardedAt
+    }
+    XPLedger {
+        uuid Id PK
+        uuid EmployeeId FK
+        int Points
+        int Source
+        uuid ReferenceId
+    }
+    Notification {
+        uuid Id PK
+        uuid UserId FK
+        string Title
+        int Type
+        boolean IsRead
+    }
+    RefreshToken {
+        uuid Id PK
+        uuid UserId FK
+        string TokenHash
+        datetime ExpiresAt
+        boolean IsRevoked
+    }
+    PasswordResetOTP {
+        uuid Id PK
+        uuid UserId FK
+        string Otp
+        datetime ExpiresAt
+        boolean IsUsed
+    }
+    AuditLog {
+        uuid Id PK
+        uuid UserId FK
+        string Action
+        string Entity
+        string IPAddress
+    }
+    Announcement {
+        uuid Id PK
+        uuid ClassId FK
+        string Title
+        string Body
+    }

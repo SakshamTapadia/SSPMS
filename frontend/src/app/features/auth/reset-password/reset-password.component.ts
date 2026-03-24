@@ -9,6 +9,7 @@ export class ResetPasswordComponent {
   otp = '';
   newPassword = '';
   loading = false;
+  showPassword = false;
 
   constructor(private auth: AuthService, private route: ActivatedRoute, private router: Router, private snack: MatSnackBar) {
     this.email = route.snapshot.queryParams['email'] ?? '';

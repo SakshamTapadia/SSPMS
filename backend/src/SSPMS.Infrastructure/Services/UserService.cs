@@ -152,10 +152,24 @@ public class UserService : IUserService
 
     public async Task<ServiceResult<UserDto>> CreateEmployeeByTrainerAsync(CreateUserRequest request, Guid trainerId)
     {
-        var trainerClass = await _db.Classes.FirstOrDefaultAsync(c => c.TrainerId == trainerId && !c.IsArchived);
-        if (trainerClass == null) return ServiceResult<UserDto>.Failure("You have no active class.");
+        Guid classId;
 
-        var req = request with { ClassId = trainerClass.Id, Role = UserRole.Employee };
+        if (request.ClassId.HasValue)
+        {
+            // Verify the trainer owns the specified class
+            var owns = await _db.Classes.AnyAsync(c => c.Id == request.ClassId.Value && c.TrainerId == trainerId && !c.IsArchived);
+            if (!owns) return ServiceResult<UserDto>.Failure("Class not found or access denied.");
+            classId = request.ClassId.Value;
+        }
+        else
+        {
+            // Fall back to trainer's first active class
+            var trainerClass = await _db.Classes.FirstOrDefaultAsync(c => c.TrainerId == trainerId && !c.IsArchived);
+            if (trainerClass == null) return ServiceResult<UserDto>.Failure("You have no active class. Create a class first.");
+            classId = trainerClass.Id;
+        }
+
+        var req = request with { ClassId = classId, Role = UserRole.Employee };
         return await CreateUserAsync(req, trainerId);
     }
 

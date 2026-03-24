@@ -74,7 +74,7 @@ export class ClassDetailComponent implements OnInit {
     if (this.addForm.invalid || !this.cls) return;
     this.adding = true;
     const v = this.addForm.value;
-    this.api.createEmployeeByTrainer({ name: v.name, email: v.email, role: 'Employee', password: v.password }).subscribe({
+    this.api.createEmployeeByTrainer({ name: v.name, email: v.email, role: 'Employee', password: v.password, classId: this.cls!.id }).subscribe({
       next: user => {
         this.employees = [...this.employees, user];
         this.snack.open(`${user.name} created and added.`, '', { duration: 2500 });

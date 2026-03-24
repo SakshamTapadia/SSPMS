@@ -13,16 +13,34 @@ public class EmailService : IEmailService
 
     public async Task SendAsync(string to, string subject, string htmlBody)
     {
+        var host     = _config["Email:SmtpHost"] ?? "smtp.gmail.com";
+        var port     = int.Parse(_config["Email:SmtpPort"] ?? "587");
+        var username = _config["Email:SmtpUsername"] ?? "";
+        var password = (_config["Email:Password"] ?? "").Replace(" ", "");
+        var from     = _config["Email:From"] ?? username;
+        var display  = _config["Email:DisplayName"] ?? "SSPMS";
+
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(_config["Email:DisplayName"] ?? "SSPMS", _config["Email:From"]));
+        message.From.Add(new MailboxAddress(display, from));
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
         message.Body = new TextPart("html") { Text = WrapTemplate(subject, htmlBody) };
 
         using var client = new SmtpClient();
         using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await client.ConnectAsync(_config["Email:SmtpHost"], int.Parse(_config["Email:SmtpPort"] ?? "587"), MailKit.Security.SecureSocketOptions.StartTls, cts.Token);
-        await client.AuthenticateAsync(_config["Email:SmtpUsername"], _config["Email:Password"], cts.Token);
+
+        // Try port 587 STARTTLS first; fall back to port 465 SSL
+        try
+        {
+            await client.ConnectAsync(host, port, MailKit.Security.SecureSocketOptions.StartTls, cts.Token);
+        }
+        catch
+        {
+            if (!client.IsConnected)
+                await client.ConnectAsync(host, 465, MailKit.Security.SecureSocketOptions.SslOnConnect, cts.Token);
+        }
+
+        await client.AuthenticateAsync(username, password, cts.Token);
         await client.SendAsync(message, cts.Token);
         await client.DisconnectAsync(true);
     }

@@ -1,0 +1,39 @@
+graph TB
+    Browser["Browser / Mobile Client"]
+
+    subgraph FE["Frontend — Angular 19  ·  Vercel / localhost:4200"]
+        AuthMod["Auth Module\nLogin · Register · Forgot PW · Reset PW"]
+        AdminMod["Admin Module\nDashboard · Users · Classes · Audit Log"]
+        TrainerMod["Trainer Module\nTasks · Evaluate · Leaderboard · Reports"]
+        EmpMod["Employee Module\nAttempt · Results · Badges · Leaderboard"]
+        CoreMod["Core Layer\nServices · Guards · Interceptors · Models"]
+    end
+
+    subgraph BE["Backend — ASP.NET Core 9  ·  localhost:5081"]
+        MW["JWT Auth · CORS · Rate Limiter · Exception Handler"]
+        REST["11 REST Controllers  /api/v1/*"]
+        Hubs["SignalR Hubs\n/hubs/notifications  ·  /hubs/submissions"]
+        BgJob["Background Job\nAuto-submit expired tasks every 60 s"]
+        AppLayer["Application Layer — 11 Service Interfaces"]
+        InfraLayer["Infrastructure Layer — 11 Service Implementations"]
+        EFCtx["EF Core 9 — ApplicationDbContext"]
+    end
+
+    PG[("PostgreSQL 15\nSSPMS Database")]
+    Gmail["Gmail SMTP\nMailKit · Port 587"]
+    GOAuth["Google OAuth 2.0\nGoogle.Apis.Auth"]
+    Redis["Redis\nSignalR Backplane (optional)"]
+
+    Browser -->|HTTPS| FE
+    FE -->|"REST / JSON"| REST
+    FE <-->|WebSocket| Hubs
+    MW --> REST
+    REST --> AppLayer
+    Hubs --> AppLayer
+    BgJob --> AppLayer
+    AppLayer --> InfraLayer
+    InfraLayer --> EFCtx
+    EFCtx --> PG
+    InfraLayer -->|SMTP| Gmail
+    InfraLayer -->|"Token Verify"| GOAuth
+    Hubs -.->|"Pub/Sub Backplane"| Redis
