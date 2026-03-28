@@ -209,6 +209,8 @@
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.45);
   z-index: 99;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   animation: fadeIn 0.2s ease both;
   &.open { display: block; }
 }

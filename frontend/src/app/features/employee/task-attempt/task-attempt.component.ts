@@ -159,9 +159,14 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
   }
 
   submit(): void {
-    if (!this.submission) return;
-    if (!confirm('Submit your answers? This cannot be undone.')) return;
+    if (!this.submission || this.submitting) return;
+    // Set submitting=true BEFORE confirm() — on mobile, the native dialog triggers
+    // a visibilitychange event which would otherwise fire the malpractice handler.
     this.submitting = true;
+    if (!confirm('Submit your answers? This cannot be undone.')) {
+      this.submitting = false;
+      return;
+    }
     this.saveDraftFirst().then(() => {
       this.api.submitSubmission(this.submission!.id).subscribe({
         next: () => { this.snack.open('Submitted!', 'OK', { duration: 3000 }); this.router.navigate(['/employee/tasks', this.taskId, 'result']); },

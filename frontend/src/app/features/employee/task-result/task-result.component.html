@@ -19,9 +19,14 @@
   </div>
   <div class="score-summary">
     <mat-card class="score-card"><mat-card-content>
-      <div class="score-val">{{ submission.totalFinalScore | number:'1.0-1' }}</div>
-      <div class="score-lbl">Final Score</div>
-      <div class="score-sub">(Raw: {{ submission.totalRawScore | number:'1.0-1' }} × {{ submission.multiplier | percent }})</div>
+      <div class="score-val">{{ submission.totalRawScore | number:'1.0-1' }}<span class="score-denom"> / {{ totalMarks }}</span></div>
+      <div class="score-lbl">Raw Score</div>
+      <div class="score-sub" *ngIf="submission.multiplier !== null && submission.multiplier !== undefined && submission.multiplier < 1">
+        ×{{ submission.multiplier | percent }} multiplier → Final: {{ submission.totalFinalScore | number:'1.0-1' }}
+      </div>
+      <div class="score-sub" *ngIf="!submission.multiplier || submission.multiplier >= 1">
+        Final: {{ submission.totalFinalScore | number:'1.0-1' }}
+      </div>
     </mat-card-content></mat-card>
     <mat-card class="score-card"><mat-card-content>
       <div class="score-val">#{{ submission.submissionRank ?? '—' }}</div>
@@ -44,7 +49,7 @@
           </ng-container>
           Q{{ i + 1 }}: {{ getQuestion(a.questionId)?.stem | slice:0:60 }}
         </mat-panel-title>
-        <mat-panel-description>{{ a.finalScore ?? '?' }} / {{ getQuestion(a.questionId)?.marks }} marks</mat-panel-description>
+        <mat-panel-description>{{ a.rawScore ?? '—' }} / {{ getQuestion(a.questionId)?.marks }} marks</mat-panel-description>
       </mat-expansion-panel-header>
 
       <div class="answer-detail" *ngIf="getQuestion(a.questionId) as q">

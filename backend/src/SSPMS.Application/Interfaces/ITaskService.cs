@@ -5,7 +5,7 @@ namespace SSPMS.Application.Interfaces;
 
 public interface ITaskService
 {
-    Task<IEnumerable<TaskDto>> GetTasksAsync(Guid trainerId, Guid? classId = null);
+    Task<IEnumerable<TaskDto>> GetTasksAsync(Guid? trainerId, Guid? classId = null);
     Task<IEnumerable<TaskDto>> GetMyTasksAsync(Guid employeeId);
     Task<ServiceResult<TaskDto>> GetByIdAsync(Guid id, Guid requesterId, string role);
     Task<ServiceResult<TaskDto>> CreateTaskAsync(CreateTaskRequest request, Guid trainerId);

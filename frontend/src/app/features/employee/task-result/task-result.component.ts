@@ -44,4 +44,8 @@ export class TaskResultComponent implements OnInit {
     const correct = this.getCorrectOption(q);
     return !!correct && correct.id === answerText;
   }
+
+  get totalMarks(): number {
+    return this.questions.reduce((sum, q) => sum + q.marks, 0);
+  }
 }

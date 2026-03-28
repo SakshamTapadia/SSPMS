@@ -26,11 +26,14 @@ public class TaskService : ITaskService
         _email = email;
     }
 
-    public async Task<IEnumerable<TaskDto>> GetTasksAsync(Guid trainerId, Guid? classId)
+    public async Task<IEnumerable<TaskDto>> GetTasksAsync(Guid? trainerId, Guid? classId)
     {
-        var trainerClassIds = await _db.Classes.Where(c => c.TrainerId == trainerId).Select(c => c.Id).ToListAsync();
-        var query = _db.Tasks.Include(t => t.Class).Include(t => t.CreatedByTrainer)
-            .Where(t => trainerClassIds.Contains(t.ClassId));
+        var query = _db.Tasks.Include(t => t.Class).Include(t => t.CreatedByTrainer).AsQueryable();
+        if (trainerId.HasValue)
+        {
+            var trainerClassIds = await _db.Classes.Where(c => c.TrainerId == trainerId).Select(c => c.Id).ToListAsync();
+            query = query.Where(t => trainerClassIds.Contains(t.ClassId));
+        }
         if (classId.HasValue) query = query.Where(t => t.ClassId == classId);
         return await query.OrderByDescending(t => t.CreatedAt).Select(t => MapDto(t)).ToListAsync();
     }

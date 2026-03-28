@@ -14,7 +14,10 @@ public class TasksController : BaseController
 
     [HttpGet, Authorize(Roles = "Admin,Trainer")]
     public async Task<IActionResult> GetAll([FromQuery] Guid? classId = null)
-        => Ok(await _tasks.GetTasksAsync(CurrentUserId, classId));
+    {
+        var trainerId = CurrentUserRole == "Admin" ? (Guid?)null : CurrentUserId;
+        return Ok(await _tasks.GetTasksAsync(trainerId, classId));
+    }
 
     [HttpGet("me"), Authorize(Roles = "Employee")]
     public async Task<IActionResult> GetMyTasks()
