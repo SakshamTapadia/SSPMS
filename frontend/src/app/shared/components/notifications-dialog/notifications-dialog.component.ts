@@ -17,7 +17,7 @@ import { NotificationDto } from '../../../core/models';
         <p>No notifications</p>
       </div>
       <div class="notif-list" *ngIf="!loading && items.length > 0">
-        <div class="notif-item" *ngFor="let n of items" [class.notif-unread]="!n.isRead">
+        <div class="notif-item" *ngFor="let n of items" [class.notif-unread]="!n.isRead" [class.notif-read]="n.isRead">
           <div class="notif-body">
             <strong>{{ n.title }}</strong>
             <p>{{ n.body }}</p>
@@ -35,16 +35,18 @@ import { NotificationDto } from '../../../core/models';
     </mat-dialog-actions>
   `,
   styles: [`
-    .notif-content { min-width: 340px; max-height: 420px; overflow-y: auto; }
+    .notif-content { min-width: 360px; max-height: 460px; overflow-y: auto; padding: 0 4px; }
     .notif-empty { text-align: center; padding: 32px; color: #888; }
     .notif-empty mat-icon { font-size: 48px; width: 48px; height: 48px; display: block; margin: 0 auto 8px; }
-    .notif-list { display: flex; flex-direction: column; }
-    .notif-item { display: flex; align-items: flex-start; gap: 8px; padding: 10px 0; border-bottom: 1px solid #eee; }
+    .notif-list { display: flex; flex-direction: column; gap: 2px; }
+    .notif-item { display: flex; align-items: center; gap: 8px; padding: 10px 8px; border-radius: 8px; border-bottom: 1px solid #f1f5f9; }
     .notif-item:last-child { border-bottom: none; }
-    .notif-unread { background: rgba(99,102,241,0.06); border-radius: 6px; padding: 10px 8px; }
-    .notif-body { flex: 1; }
-    .notif-body p { margin: 2px 0 4px; font-size: 0.875rem; color: #555; }
-    .notif-time { font-size: 0.75rem; color: #888; }
+    .notif-unread { background: rgba(99,102,241,0.06); border-left: 3px solid #6366f1; }
+    .notif-read { border-left: 3px solid transparent; }
+    .notif-body { flex: 1; min-width: 0; }
+    .notif-body strong { font-size: 0.875rem; display: block; margin-bottom: 2px; }
+    .notif-body p { margin: 0 0 4px; font-size: 0.8125rem; color: #555; line-height: 1.4; }
+    .notif-time { font-size: 0.75rem; color: #94a3b8; }
   `]
 })
 export class NotificationsDialogComponent implements OnInit {

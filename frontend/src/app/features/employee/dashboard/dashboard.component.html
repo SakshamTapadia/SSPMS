@@ -90,10 +90,12 @@
     <div class="card">
       <div class="card-header">
         <h3>Badges Earned</h3>
-        <span class="text-sm" style="color:var(--c-text-3)">{{ stats.recentBadges?.length || 0 }} total</span>
-        <button mat-icon-button (click)="refreshStats()" matTooltip="Refresh" style="margin-left:auto">
-          <mat-icon style="font-size:18px;width:18px;height:18px">refresh</mat-icon>
-        </button>
+        <div class="card-header-right">
+          <span class="text-sm" style="color:var(--c-text-3)">{{ stats.recentBadges?.length || 0 }} total</span>
+          <button mat-icon-button (click)="refreshStats()" matTooltip="Refresh stats">
+            <mat-icon style="font-size:18px;width:18px;height:18px">refresh</mat-icon>
+          </button>
+        </div>
       </div>
       <div class="empty-state" *ngIf="!stats.recentBadges?.length">
         <mat-icon>workspace_premium</mat-icon>
@@ -102,8 +104,8 @@
       </div>
       <div class="badge-grid" *ngIf="stats.recentBadges?.length">
         <div class="badge-item" *ngFor="let b of stats.recentBadges" [matTooltip]="b.description">
-          <div class="badge-icon-wrap">
-            <mat-icon class="badge-icon">workspace_premium</mat-icon>
+          <div class="badge-icon-wrap" [style.background]="badgeGradient(b.name)">
+            <mat-icon class="badge-icon">{{ badgeIcon(b.name) }}</mat-icon>
           </div>
           <span class="badge-name">{{ b.name }}</span>
         </div>

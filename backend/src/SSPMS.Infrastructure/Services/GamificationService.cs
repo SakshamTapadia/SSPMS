@@ -118,9 +118,13 @@ public class GamificationService : IGamificationService
 
     public async Task<IEnumerable<EmployeeBadgeDto>> GetEmployeeBadgesAsync(Guid employeeId)
     {
-        return await _db.EmployeeBadges
+        // Load to memory first — EF Core cannot translate GroupBy + navigation access (g.First().Badge.Name) to SQL
+        var rows = await _db.EmployeeBadges
             .Include(eb => eb.Badge)
             .Where(eb => eb.EmployeeId == employeeId)
+            .ToListAsync();
+
+        return rows
             .GroupBy(eb => eb.BadgeId)
             .Select(g => new EmployeeBadgeDto(
                 g.Key,
@@ -129,7 +133,7 @@ public class GamificationService : IGamificationService
                 g.First().Badge.IconUrl,
                 g.Max(x => x.AwardedAt),
                 g.Count()))
-            .ToListAsync();
+            .ToList();
     }
 
     public async Task<XPSummaryDto> GetXPSummaryAsync(Guid employeeId)
