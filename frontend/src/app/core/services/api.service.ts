@@ -77,7 +77,7 @@ export class ApiService {
   addQuestion(taskId: string, req: CreateQuestionRequest): Observable<QuestionDto> { return this.http.post<QuestionDto>(`${this.base}/tasks/${taskId}/questions`, req); }
   updateQuestion(taskId: string, qId: string, req: CreateQuestionRequest): Observable<QuestionDto> { return this.http.put<QuestionDto>(`${this.base}/tasks/${taskId}/questions/${qId}`, req); }
   deleteQuestion(taskId: string, qId: string): Observable<void> { return this.http.delete<void>(`${this.base}/tasks/${taskId}/questions/${qId}`); }
-  reorderQuestions(taskId: string, questionIds: string[]): Observable<void> { return this.http.put<void>(`${this.base}/tasks/${taskId}/questions/reorder`, { questionIds }); }
+  reorderQuestions(taskId: string, questionIds: string[]): Observable<void> { return this.http.patch<void>(`${this.base}/tasks/${taskId}/questions/reorder`, { questionIds }); }
   importQuestionsFromDocument(taskId: string, file: File): Observable<QuestionDto[]> {
     const form = new FormData();
     form.append('file', file, file.name);
