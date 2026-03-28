@@ -241,7 +241,9 @@ public class AnalyticsService : IAnalyticsService
             .ToListAsync();
 
         var questions = task.Questions.OrderBy(q => q.OrderIndex).ToList();
-        var enrolled = task.Class?.Enrollments.Count(e => e.Status == Domain.Enums.EnrollmentStatus.Active) ?? 0;
+        var enrolled = await _db.ClassEnrollments
+            .Include(e => e.Employee)
+            .CountAsync(e => e.ClassId == task.ClassId && e.Status == Domain.Enums.EnrollmentStatus.Active && e.Employee.Role == UserRole.Employee);
         var totalMarks = questions.Sum(q => q.Marks);
 
         // Per-question correct answer counts

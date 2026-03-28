@@ -25,7 +25,11 @@ public class ReportService : IReportService
         var @class = await _db.Classes.Include(c => c.Trainer).FirstOrDefaultAsync(c => c.Id == classId)
             ?? throw new Exception("Class not found.");
 
-        var enrolledIds = await _db.ClassEnrollments.Where(e => e.ClassId == classId && e.Status == EnrollmentStatus.Active).Select(e => e.EmployeeId).ToListAsync();
+        var enrolledIds = await _db.ClassEnrollments
+            .Include(e => e.Employee)
+            .Where(e => e.ClassId == classId && e.Status == EnrollmentStatus.Active && e.Employee.Role == UserRole.Employee)
+            .Select(e => e.EmployeeId)
+            .ToListAsync();
         var tasks = await _db.Tasks.Where(t => t.ClassId == classId).ToListAsync();
         var taskIds = tasks.Select(t => t.Id).ToList();
         var submissions = await _db.Submissions.Where(s => taskIds.Contains(s.TaskId)).ToListAsync();
@@ -91,7 +95,7 @@ public class ReportService : IReportService
 
         var classSummaries = classes.Select(c =>
         {
-            var enrolled = _db.ClassEnrollments.Count(e => e.ClassId == c.Id && e.Status == EnrollmentStatus.Active);
+            var enrolled = _db.ClassEnrollments.Include(e => e.Employee).Count(e => e.ClassId == c.Id && e.Status == EnrollmentStatus.Active && e.Employee.Role == UserRole.Employee);
             var taskCount = tasks.Count(t => t.ClassId == c.Id);
             var classTaskIds = tasks.Where(t => t.ClassId == c.Id).Select(t => t.Id).ToHashSet();
             var classSubs = subs.Where(s => classTaskIds.Contains(s.TaskId)).ToList();

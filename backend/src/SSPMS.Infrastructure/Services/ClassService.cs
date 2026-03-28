@@ -17,14 +17,14 @@ public class ClassService : IClassService
 
     public async Task<IEnumerable<ClassDto>> GetClassesAsync(Guid? trainerId)
     {
-        var query = _db.Classes.Include(c => c.Trainer).Include(c => c.Enrollments).Include(c => c.Tasks).AsQueryable();
+        var query = _db.Classes.Include(c => c.Trainer).Include(c => c.Enrollments).ThenInclude(e => e.Employee).Include(c => c.Tasks).AsQueryable();
         if (trainerId.HasValue) query = query.Where(c => c.TrainerId == trainerId);
         return await query.Select(c => MapDto(c)).ToListAsync();
     }
 
     public async Task<ServiceResult<ClassDto>> GetByIdAsync(Guid id, Guid requesterId, string role)
     {
-        var c = await _db.Classes.Include(x => x.Trainer).Include(x => x.Enrollments).Include(x => x.Tasks).FirstOrDefaultAsync(x => x.Id == id);
+        var c = await _db.Classes.Include(x => x.Trainer).Include(x => x.Enrollments).ThenInclude(e => e.Employee).Include(x => x.Tasks).FirstOrDefaultAsync(x => x.Id == id);
         if (c == null) return ServiceResult<ClassDto>.Failure("Class not found.");
         if (role == "Trainer" && c.TrainerId != requesterId) return ServiceResult<ClassDto>.Failure("Access denied.");
         return ServiceResult<ClassDto>.Success(MapDto(c));
@@ -94,6 +94,10 @@ public class ClassService : IClassService
 
     public async Task<ServiceResult> EnrollEmployeeAsync(Guid classId, Guid employeeId)
     {
+        var user = await _db.Users.FindAsync(employeeId);
+        if (user == null || user.Role != UserRole.Employee)
+            return ServiceResult.Failure("Only employees can be enrolled in a class.");
+
         if (await _db.ClassEnrollments.AnyAsync(e => e.EmployeeId == employeeId && e.Status == EnrollmentStatus.Active))
             return ServiceResult.Failure("Employee is already enrolled in a class. Transfer them instead.");
 
@@ -104,6 +108,10 @@ public class ClassService : IClassService
 
     public async Task<ServiceResult> TransferEmployeeAsync(Guid employeeId, Guid targetClassId)
     {
+        var user = await _db.Users.FindAsync(employeeId);
+        if (user == null || user.Role != UserRole.Employee)
+            return ServiceResult.Failure("Only employees can be transferred between classes.");
+
         await _db.ClassEnrollments
             .Where(e => e.EmployeeId == employeeId && e.Status == EnrollmentStatus.Active)
             .ExecuteUpdateAsync(s => s.SetProperty(e => e.Status, EnrollmentStatus.Transferred));
@@ -126,7 +134,7 @@ public class ClassService : IClassService
     {
         var enrollment = await _db.ClassEnrollments
             .Include(e => e.Class).ThenInclude(c => c.Trainer)
-            .Include(e => e.Class).ThenInclude(c => c.Enrollments)
+            .Include(e => e.Class).ThenInclude(c => c.Enrollments).ThenInclude(e => e.Employee)
             .Include(e => e.Class).ThenInclude(c => c.Tasks)
             .FirstOrDefaultAsync(e => e.EmployeeId == employeeId && e.Status == EnrollmentStatus.Active);
 
@@ -137,6 +145,6 @@ public class ClassService : IClassService
     private static ClassDto MapDto(Class c) => new(
         c.Id, c.Name, c.Description, c.StartDate, c.EndDate, c.SkillTags,
         c.TrainerId, c.Trainer?.Name ?? "", c.IsArchived,
-        c.Enrollments.Count(e => e.Status == EnrollmentStatus.Active),
+        c.Enrollments.Count(e => e.Status == EnrollmentStatus.Active && e.Employee?.Role == UserRole.Employee),
         c.Tasks.Count, c.CreatedAt);
 }

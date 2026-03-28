@@ -40,7 +40,8 @@ public class GamificationService : IGamificationService
     {
         var from = GetPeriodStart(period);
         var enrolledIds = await _db.ClassEnrollments
-            .Where(e => e.ClassId == classId && e.Status == EnrollmentStatus.Active)
+            .Include(e => e.Employee)
+            .Where(e => e.ClassId == classId && e.Status == EnrollmentStatus.Active && e.Employee.Role == UserRole.Employee)
             .Select(e => e.EmployeeId)
             .ToListAsync();
 
