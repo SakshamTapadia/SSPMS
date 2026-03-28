@@ -132,7 +132,7 @@
           <mat-icon class="stat-icon">check_circle</mat-icon>
           <span class="stat-label">Participation Rate</span>
         </div>
-        <span class="stat-value">{{ resultsGrid.participationRate | percent:'1.0-0' }}</span>
+        <span class="stat-value">{{ resultsGrid.participationRate | number:'1.0-0' }}%</span>
         <div class="stat-sub">{{ resultsGrid.totalParticipants }} of {{ resultsGrid.totalEnrolled }}</div>
       </div>
       <div class="stat-card">
