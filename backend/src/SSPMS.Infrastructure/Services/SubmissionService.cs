@@ -98,7 +98,9 @@ public class SubmissionService : ISubmissionService
                     .FirstOrDefaultAsync(s => s.Id == submissionId && s.EmployeeId == employeeId);
                 if (submission == null) return ServiceResult<SubmissionDto>.Failure("Not found.");
                 if (submission.Status != SubmissionStatus.Draft) return ServiceResult<SubmissionDto>.Failure("Already submitted.");
-                if (DateTime.UtcNow > submission.Task.EndAt) return ServiceResult<SubmissionDto>.Failure("Task deadline passed.");
+                var personalDeadline = submission.StartedAt.AddMinutes(submission.Task.DurationMinutes);
+                var effectiveDeadline = submission.Task.EndAt < personalDeadline ? submission.Task.EndAt : personalDeadline;
+                if (DateTime.UtcNow > effectiveDeadline) return ServiceResult<SubmissionDto>.Failure("Task deadline passed.");
 
                 // Assign rank atomically
                 var rank = await _db.Submissions.CountAsync(s => s.TaskId == submission.TaskId && s.Status != SubmissionStatus.Draft) + 1;
@@ -308,6 +310,30 @@ public class SubmissionService : ISubmissionService
     public async Task ProcessExpiredSubmissionsAsync()
     {
         var now = DateTime.UtcNow;
+
+        // Auto-submit drafts where the student's personal duration has elapsed mid-window
+        var personallyExpired = await _db.Submissions
+            .Include(s => s.Task)
+            .Where(s => s.Status == SubmissionStatus.Draft
+                     && s.SubmittedAt == null
+                     && s.Task.Status == Domain.Enums.AssignmentStatus.Published)
+            .ToListAsync();
+
+        foreach (var sub in personallyExpired)
+        {
+            var personalDeadline = sub.StartedAt.AddMinutes(sub.Task.DurationMinutes);
+            if (now >= personalDeadline && now < sub.Task.EndAt)
+            {
+                sub.SubmittedAt = now;
+                sub.SubmissionRank = null;
+                sub.Multiplier = 0;
+                sub.TotalRawScore = 0;
+                sub.TotalFinalScore = 0;
+                sub.Status = SubmissionStatus.Submitted;
+                sub.IsAutoSubmitted = true;
+            }
+        }
+
         var expiredTasks = await _db.Tasks
             .Where(t => t.Status == Domain.Enums.AssignmentStatus.Published && t.EndAt < now)
             .ToListAsync();

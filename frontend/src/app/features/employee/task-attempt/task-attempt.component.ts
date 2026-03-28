@@ -130,8 +130,10 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
   }
 
   private startTimer(sub: SubmissionDto): void {
-    const endAt = new Date(sub.taskEndAt).getTime();
-    this.timeLeft = Math.max(0, Math.floor((endAt - Date.now()) / 1000));
+    const taskEnd      = new Date(sub.taskEndAt).getTime();
+    const personalEnd  = new Date(sub.startedAt!).getTime() + sub.taskDurationMinutes * 60 * 1000;
+    const effectiveEnd = Math.min(taskEnd, personalEnd);
+    this.timeLeft = Math.max(0, Math.floor((effectiveEnd - Date.now()) / 1000));
     this.timerSub = interval(1000).subscribe(() => {
       if (this.timeLeft > 0) this.timeLeft--;
       else this.autoSubmit();
