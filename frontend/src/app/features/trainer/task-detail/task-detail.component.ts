@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Subscription } from 'rxjs';
+import { Subscription, finalize } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { ClassDto, TaskDto, QuestionDto, QuestionType } from '../../../core/models';
 
@@ -170,16 +170,14 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     }
     if (!confirm('Publish this task? All enrolled employees will be notified.')) return;
     this.publishing = true;
-    this.api.publishTask(this.taskId).subscribe({
+    this.api.publishTask(this.taskId).pipe(finalize(() => this.publishing = false)).subscribe({
       next: () => {
         if (this.task) this.task = { ...this.task, status: 'Published' };
         this.taskForm.disable();
         this.snack.open('Task published!', '', { duration: 2500 });
-        this.publishing = false;
       },
       error: err => {
         this.snack.open(err?.error?.message ?? 'Failed to publish.', 'Close', { duration: 4000 });
-        this.publishing = false;
       }
     });
   }

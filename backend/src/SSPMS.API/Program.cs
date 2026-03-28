@@ -233,10 +233,11 @@ public partial class Program
             "Madhuri Pillai",  "Archana Rao",      "Deepika Banerjee", "Ritika Dixit",    "Sunita Kumar"
         };
 
+        var employees = new List<User>();
         for (int i = 0; i < employeeNames.Length; i++)
         {
             var slug = employeeNames[i].ToLower().Replace(" ", ".");
-            db.Users.Add(new User
+            var emp = new User
             {
                 Name = employeeNames[i],
                 Email = $"{slug}@sspms.com",
@@ -244,9 +245,26 @@ public partial class Program
                 Role = UserRole.Employee,
                 IsActive = true,
                 IsEmailVerified = true
-            });
+            };
+            db.Users.Add(emp);
+            employees.Add(emp);
         }
 
+        await db.SaveChangesAsync();
+
+        // ── 2 Classes, one per trainer ───────────────────────────────────
+        var trainers = await db.Users.Where(u => u.Role == UserRole.Trainer).ToListAsync();
+        var class1 = new SSPMS.Domain.Entities.Class { Name = ".NET Developer Batch-T1", TrainerId = trainers[0].Id };
+        var class2 = new SSPMS.Domain.Entities.Class { Name = ".NET Developer Batch-T2", TrainerId = trainers[1].Id };
+        db.Classes.AddRange(class1, class2);
+        await db.SaveChangesAsync();
+
+        // ── Enroll first 25 employees in class1, next 25 in class2 ──────
+        for (int i = 0; i < employees.Count; i++)
+        {
+            var classId = i < 25 ? class1.Id : class2.Id;
+            db.ClassEnrollments.Add(new SSPMS.Domain.Entities.ClassEnrollment { EmployeeId = employees[i].Id, ClassId = classId });
+        }
         await db.SaveChangesAsync();
     }
 }

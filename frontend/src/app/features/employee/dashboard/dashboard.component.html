@@ -91,6 +91,9 @@
       <div class="card-header">
         <h3>Badges Earned</h3>
         <span class="text-sm" style="color:var(--c-text-3)">{{ stats.recentBadges?.length || 0 }} total</span>
+        <button mat-icon-button (click)="refreshStats()" matTooltip="Refresh" style="margin-left:auto">
+          <mat-icon style="font-size:18px;width:18px;height:18px">refresh</mat-icon>
+        </button>
       </div>
       <div class="empty-state" *ngIf="!stats.recentBadges?.length">
         <mat-icon>workspace_premium</mat-icon>

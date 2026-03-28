@@ -45,9 +45,9 @@
     </div>
     <div class="task-card-footer">
       <a class="btn btn--ghost btn--sm" [routerLink]="['/employee/tasks', t.id, 'result']">Results</a>
-      <a class="btn btn--primary btn--sm" *ngIf="isOpen(t)"
+      <a class="btn btn--primary btn--sm" *ngIf="canAttempt(t)"
          [routerLink]="['/employee/tasks', t.id, 'attempt']">Start Task</a>
-      <button class="btn btn--ghost btn--sm" *ngIf="!isOpen(t)" disabled>{{ buttonLabel(t) }}</button>
+      <button class="btn btn--ghost btn--sm" *ngIf="!canAttempt(t)" disabled>{{ hasSubmitted(t) ? 'Submitted' : buttonLabel(t) }}</button>
     </div>
   </div>
 </div>

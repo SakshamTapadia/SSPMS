@@ -7,5 +7,11 @@ export class DashboardComponent implements OnInit {
   stats?: DashboardStatsDto;
   loading = true;
   constructor(private api: ApiService) {}
-  ngOnInit(): void { this.api.getMyDashboard().subscribe({ next: s => { this.stats = s; this.loading = false; }, error: () => this.loading = false }); }
+  ngOnInit(): void {
+    this.api.getMyDashboard().subscribe({ next: s => { this.stats = s; this.loading = false; }, error: () => this.loading = false });
+  }
+
+  refreshStats(): void {
+    this.api.getMyDashboard().subscribe({ next: s => { this.stats = s; }, error: () => {} });
+  }
 }

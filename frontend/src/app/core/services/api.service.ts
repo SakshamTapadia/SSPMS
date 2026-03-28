@@ -115,8 +115,8 @@ export class ApiService {
 
   // ── Notifications ────────────────────────────────────
   getNotifications(): Observable<NotificationDto[]> { return this.http.get<NotificationDto[]>(`${this.base}/notifications`); }
-  markNotificationRead(id: string): Observable<void> { return this.http.put<void>(`${this.base}/notifications/${id}/read`, {}); }
-  markAllRead(): Observable<void> { return this.http.put<void>(`${this.base}/notifications/mark-all-read`, {}); }
+  markNotificationRead(id: string): Observable<void> { return this.http.patch<void>(`${this.base}/notifications/${id}/read`, {}); }
+  markAllRead(): Observable<void> { return this.http.patch<void>(`${this.base}/notifications/read-all`, {}); }
   getAnnouncements(): Observable<AnnouncementDto[]> { return this.http.get<AnnouncementDto[]>(`${this.base}/notifications/announcements`); }
   createAnnouncement(req: { classId?: string; title: string; body: string }): Observable<AnnouncementDto> { return this.http.post<AnnouncementDto>(`${this.base}/notifications/announcements`, req); }
 

@@ -64,10 +64,10 @@ public class TasksController : BaseController
 
     // Questions sub-resource
     [HttpGet("{taskId:guid}/questions")]
-    public async Task<IActionResult> GetQuestions(Guid taskId)
+    public async Task<IActionResult> GetQuestions(Guid taskId, [FromQuery] bool includeAnswers = false)
     {
         var isTrainer = CurrentUserRole is "Trainer" or "Admin";
-        return Ok(await _tasks.GetQuestionsAsync(taskId, isTrainer));
+        return Ok(await _tasks.GetQuestionsAsync(taskId, isTrainer || includeAnswers));
     }
 
     [HttpPost("{taskId:guid}/questions"), Authorize(Roles = "Admin,Trainer")]
