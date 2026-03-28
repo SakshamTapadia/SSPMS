@@ -60,13 +60,27 @@
 
         <div class="datetime-row">
           <mat-form-field appearance="outline">
-            <mat-label>Starts At</mat-label>
-            <input matInput type="datetime-local" formControlName="startAt">
+            <mat-label>Start Date</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="startDate" placeholder="Choose date" readonly>
+            <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+            <mat-error>Required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" style="max-width:150px">
+            <mat-label>Start Time</mat-label>
+            <input matInput type="time" formControlName="startTime">
             <mat-error>Required</mat-error>
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>Ends At</mat-label>
-            <input matInput type="datetime-local" formControlName="endAt">
+            <mat-label>End Date</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="endDate" placeholder="Choose date" readonly>
+            <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+            <mat-error>Required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" style="max-width:150px">
+            <mat-label>End Time</mat-label>
+            <input matInput type="time" formControlName="endTime">
             <mat-error>Required</mat-error>
           </mat-form-field>
           <mat-form-field appearance="outline" style="max-width:180px">
@@ -101,6 +115,42 @@
             {{ importing ? 'Importing…' : 'Import from PDF/DOCX' }}
           </button>
           <input #importInput type="file" accept=".pdf,.docx" style="display:none" (change)="importFromDocument($event)">
+          <button mat-icon-button matTooltip="View required format & download template" (click)="showImportSchema = !showImportSchema">
+            <mat-icon>help_outline</mat-icon>
+          </button>
+        </div>
+
+        <!-- Import schema info panel -->
+        <div class="import-schema-panel" *ngIf="showImportSchema">
+          <div class="schema-header">
+            <mat-icon color="primary">description</mat-icon>
+            <strong>Required Document Format</strong>
+            <span class="spacer"></span>
+            <button mat-stroked-button (click)="downloadTemplate()">
+              <mat-icon>download</mat-icon> Download Template
+            </button>
+          </div>
+          <p class="schema-desc">Each question block must follow this exact structure:</p>
+          <pre class="schema-pre">1. Question text goes here
+A) First option
+B) Second option
+C) Third option
+D) Fourth option
+Answer: B
+
+2. Another question?
+A) Option one
+B) Option two
+C) Option three
+D) Option four
+Answer: D</pre>
+          <ul class="schema-rules">
+            <li>Questions must be numbered: <code>1.</code> or <code>1)</code></li>
+            <li>Options must be prefixed: <code>A)</code> <code>B)</code> <code>C)</code> <code>D)</code></li>
+            <li>Answer line must be: <code>Answer: B</code> (the letter of the correct option)</li>
+            <li>Minimum 2 options per question, maximum 4</li>
+            <li>Only MCQ questions are imported — other types must be added manually</li>
+          </ul>
         </div>
       </div>
 

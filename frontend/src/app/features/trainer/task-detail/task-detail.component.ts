@@ -31,6 +31,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
   readonly questionTypes: QuestionType[] = ['MCQ', 'Code', 'Assessment', 'Link'];
   readonly languages = ['javascript', 'python', 'java', 'csharp', 'cpp', 'sql', 'other'];
   importing = false;
+  showImportSchema = false;
 
   get totalMarks(): number { return this.questions.reduce((s, q) => s + q.marks, 0); }
   get optionsArray(): FormArray { return this.qForm.get('options') as FormArray; }
@@ -48,8 +49,10 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
       title: ['', [Validators.required, Validators.maxLength(200)]],
       description: [''],
       instructions: [''],
-      startAt: ['', Validators.required],
-      endAt: ['', Validators.required],
+      startDate: [null, Validators.required],
+      startTime: ['09:00', Validators.required],
+      endDate: [null, Validators.required],
+      endTime: ['17:00', Validators.required],
       durationMinutes: [60, [Validators.required, Validators.min(1)]]
     });
 
@@ -92,8 +95,10 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
               title: t.title,
               description: t.description ?? '',
               instructions: t.instructions ?? '',
-              startAt: this.toLocalDatetime(t.startAt),
-              endAt: this.toLocalDatetime(t.endAt),
+              startDate: new Date(t.startAt),
+              startTime: this.toTimeString(t.startAt),
+              endDate: new Date(t.endAt),
+              endTime: this.toTimeString(t.endAt),
               durationMinutes: t.durationMinutes
             });
             if (t.status !== 'Draft') this.taskForm.disable();
@@ -108,7 +113,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
         });
       } else {
         this.taskId = '';
-        this.taskForm.reset({ durationMinutes: 60 });
+        this.taskForm.reset({ durationMinutes: 60, startTime: '09:00', endTime: '17:00' });
         this.taskForm.enable();
         this.loading = false;
       }
@@ -131,8 +136,8 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
       title: v.title,
       description: v.description || undefined,
       instructions: v.instructions || undefined,
-      startAt: new Date(v.startAt).toISOString(),
-      endAt: new Date(v.endAt).toISOString(),
+      startAt: this.combineDatetime(v.startDate, v.startTime),
+      endAt: this.combineDatetime(v.endDate, v.endTime),
       durationMinutes: +v.durationMinutes
     };
 
@@ -185,7 +190,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     this.editingQId = '';
     this.clearOptions();
     this.qForm.reset({ type: 'MCQ', stem: '', marks: 10, language: 'javascript' });
-    this.addOption(); this.addOption();
+    this.addOption(); this.addOption(); this.addOption(); this.addOption();
     this.showQForm = true;
     setTimeout(() => document.querySelector('.q-form-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }
@@ -209,7 +214,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
   clearOptions(): void { while (this.optionsArray.length) this.optionsArray.removeAt(0); }
 
   onTypeChange(): void {
-    if (this.qForm.get('type')?.value === 'MCQ') { this.clearOptions(); this.addOption(); this.addOption(); }
+    if (this.qForm.get('type')?.value === 'MCQ') { this.clearOptions(); this.addOption(); this.addOption(); this.addOption(); this.addOption(); }
     else { this.clearOptions(); }
   }
 
@@ -244,6 +249,47 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  downloadTemplate(): void {
+    const content = `SSPMS Question Import Template
+==============================
+Use this format for each question. Save as .docx or .pdf before uploading.
+
+1. What is the output of console.log(typeof null)?
+A) null
+B) undefined
+C) object
+D) string
+Answer: C
+
+2. Which HTTP method is used to update a resource?
+A) GET
+B) POST
+C) PUT
+D) DELETE
+Answer: C
+
+3. What does CSS stand for?
+A) Computer Style Sheets
+B) Cascading Style Sheets
+C) Creative Style Syntax
+D) Colorful Style Sheets
+Answer: B
+
+-------------------------------
+RULES:
+- Questions must be numbered: 1. or 1)
+- Options must be prefixed: A) B) C) D)
+- Answer line must be exactly: Answer: X  (where X is the correct option letter)
+- Blank lines between questions are optional but recommended
+- Only MCQ questions are supported for import
+`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'sspms-question-template.txt'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   importFromDocument(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -275,10 +321,16 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  private toLocalDatetime(iso: string): string {
-    if (!iso) return '';
+  private toTimeString(iso: string): string {
+    if (!iso) return '00:00';
     const d = new Date(iso);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  private combineDatetime(date: Date | string, time: string): string {
+    const d = new Date(date);
+    const [h, m] = (time || '00:00').split(':').map(Number);
+    d.setHours(h, m, 0, 0);
+    return d.toISOString();
   }
 }
