@@ -2,5 +2,5 @@ export const environment = {
   production: true,
   apiUrl: 'https://sspms.onrender.com/api/v1',
   hubUrl: 'https://sspms.onrender.com/hubs',
-  googleClientId: 'REPLACE_WITH_GOOGLE_CLIENT_ID'
+  googleClientId: '616029811426-qdja92jlnikunumpun3pkds8lncsfuqt.apps.googleusercontent.com'
 };
