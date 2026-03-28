@@ -98,7 +98,7 @@ public class SubmissionService : ISubmissionService
                     .FirstOrDefaultAsync(s => s.Id == submissionId && s.EmployeeId == employeeId);
                 if (submission == null) return ServiceResult<SubmissionDto>.Failure("Not found.");
                 if (submission.Status != SubmissionStatus.Draft) return ServiceResult<SubmissionDto>.Failure("Already submitted.");
-                var personalDeadline = submission.StartedAt.AddMinutes(submission.Task.DurationMinutes);
+                var personalDeadline = (submission.StartedAt ?? DateTime.UtcNow).AddMinutes(submission.Task.DurationMinutes);
                 var effectiveDeadline = submission.Task.EndAt < personalDeadline ? submission.Task.EndAt : personalDeadline;
                 if (DateTime.UtcNow > effectiveDeadline) return ServiceResult<SubmissionDto>.Failure("Task deadline passed.");
 
@@ -321,7 +321,7 @@ public class SubmissionService : ISubmissionService
 
         foreach (var sub in personallyExpired)
         {
-            var personalDeadline = sub.StartedAt.AddMinutes(sub.Task.DurationMinutes);
+            var personalDeadline = (sub.StartedAt ?? now).AddMinutes(sub.Task.DurationMinutes);
             if (now >= personalDeadline && now < sub.Task.EndAt)
             {
                 sub.SubmittedAt = now;
