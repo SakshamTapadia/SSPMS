@@ -273,8 +273,8 @@ public class SubmissionService : ISubmissionService
             $"Your submission has been evaluated. Final score: {submission.TotalFinalScore}", NotificationType.TaskEvaluated);
         try { await _email.SendTaskEvaluatedEmailAsync(submission.Employee.Email, submission.Employee.Name, submission.Task.Title, submission.TotalFinalScore ?? 0); } catch { }
 
-        // Process badges after evaluation
-        await _gamification.ProcessBadgesForSubmissionAsync(submission.Id);
+        // Process badges after evaluation (non-critical — never fail the evaluation if this throws)
+        try { await _gamification.ProcessBadgesForSubmissionAsync(submission.Id); } catch { }
 
         return ServiceResult<SubmissionDto>.Success(MapToDto(submission, submission.Task));
     }

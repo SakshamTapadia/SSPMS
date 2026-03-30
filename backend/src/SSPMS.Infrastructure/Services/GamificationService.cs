@@ -195,16 +195,19 @@ public class GamificationService : IGamificationService
         var awarded = new List<Badge>();
 
         // Speed Demon — top 5
-        if (submission.SubmissionRank <= 5)
-            awarded.Add(badges.First(b => b.Name == "Speed Demon"));
+        var speedDemon = badges.FirstOrDefault(b => b.Name == "Speed Demon");
+        if (speedDemon != null && submission.SubmissionRank <= 5)
+            awarded.Add(speedDemon);
 
         // Early Bird — submitted within 10 minutes of task opening
-        if (submission.SubmittedAt.HasValue && submission.SubmittedAt.Value <= submission.Task.StartAt.AddMinutes(10))
-            awarded.Add(badges.First(b => b.Name == "Early Bird"));
+        var earlyBird = badges.FirstOrDefault(b => b.Name == "Early Bird");
+        if (earlyBird != null && submission.SubmittedAt.HasValue && submission.SubmittedAt.Value <= submission.Task.StartAt.AddMinutes(10))
+            awarded.Add(earlyBird);
 
-        // Perfect Score — raw == total marks
-        if (submission.TotalRawScore == submission.Task.TotalMarks)
-            awarded.Add(badges.First(b => b.Name == "Perfect Score"));
+        // Perfect Score — raw == total marks (only if task has marks > 0)
+        var perfectScore = badges.FirstOrDefault(b => b.Name == "Perfect Score");
+        if (perfectScore != null && submission.Task.TotalMarks > 0 && submission.TotalRawScore == submission.Task.TotalMarks)
+            awarded.Add(perfectScore);
 
         // Consecutive submissions — check last 4 tasks
         var employeeClassId = (await _db.ClassEnrollments.FirstOrDefaultAsync(e => e.EmployeeId == submission.EmployeeId && e.Status == EnrollmentStatus.Active))?.ClassId;
@@ -219,8 +222,9 @@ public class GamificationService : IGamificationService
             var recentSubs = await _db.Submissions
                 .Where(s => s.EmployeeId == submission.EmployeeId && recentTasks.Contains(s.TaskId) && s.SubmittedAt != null)
                 .CountAsync();
-            if (recentSubs >= 4)
-                awarded.Add(badges.First(b => b.Name == "Consistent"));
+            var consistent = badges.FirstOrDefault(b => b.Name == "Consistent");
+            if (consistent != null && recentSubs >= 4)
+                awarded.Add(consistent);
         }
 
         // Comeback King — 30% improvement
@@ -233,8 +237,9 @@ public class GamificationService : IGamificationService
             var improvement = prevSub.TotalFinalScore > 0
                 ? ((submission.TotalFinalScore - prevSub.TotalFinalScore) / prevSub.TotalFinalScore) * 100
                 : 0;
-            if (improvement >= 30)
-                awarded.Add(badges.First(b => b.Name == "Comeback King"));
+            var comebackKing = badges.FirstOrDefault(b => b.Name == "Comeback King");
+            if (comebackKing != null && improvement >= 30)
+                awarded.Add(comebackKing);
         }
 
         foreach (var badge in awarded)
@@ -266,7 +271,8 @@ public class GamificationService : IGamificationService
         var streak = await GetCurrentStreakAsync(employeeId);
         if (streak >= 10)
         {
-            var badge = await _db.Badges.FirstAsync(b => b.Name == "Streak Master");
+            var badge = await _db.Badges.FirstOrDefaultAsync(b => b.Name == "Streak Master");
+            if (badge == null) return;
             // Only award once per 10-day milestone
             var lastAward = await _db.EmployeeBadges
                 .Where(eb => eb.EmployeeId == employeeId && eb.BadgeId == badge.Id)

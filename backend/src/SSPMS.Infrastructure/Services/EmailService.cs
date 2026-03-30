@@ -27,20 +27,35 @@ public class EmailService : IEmailService
         message.Body = new TextPart("html") { Text = WrapTemplate(subject, htmlBody) };
 
         using var client = new SmtpClient();
-        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(45));
 
-        // Try port 587 STARTTLS first; fall back to port 465 SSL
+        // Try 465/SSL first (more reliable on cloud hosts), then 587/STARTTLS
+        Exception? lastEx = null;
+        foreach (var (p, mode) in new[] {
+            (465, MailKit.Security.SecureSocketOptions.SslOnConnect),
+            (587, MailKit.Security.SecureSocketOptions.StartTls) })
+        {
+            try
+            {
+                if (client.IsConnected) await client.DisconnectAsync(false);
+                await client.ConnectAsync(host, p, mode, cts.Token);
+                lastEx = null;
+                break;
+            }
+            catch (Exception ex) { lastEx = ex; }
+        }
+        if (lastEx != null)
+            throw new InvalidOperationException($"SMTP connect failed on all ports. Last error: {lastEx.Message}", lastEx);
+
         try
         {
-            await client.ConnectAsync(host, port, MailKit.Security.SecureSocketOptions.StartTls, cts.Token);
+            await client.AuthenticateAsync(username, password, cts.Token);
         }
-        catch
+        catch (Exception ex)
         {
-            if (!client.IsConnected)
-                await client.ConnectAsync(host, 465, MailKit.Security.SecureSocketOptions.SslOnConnect, cts.Token);
+            throw new InvalidOperationException($"SMTP authentication failed for '{username}'. Ensure the app password is current and 2FA is enabled on the Google account. Error: {ex.Message}", ex);
         }
 
-        await client.AuthenticateAsync(username, password, cts.Token);
         await client.SendAsync(message, cts.Token);
         await client.DisconnectAsync(true);
     }

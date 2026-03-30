@@ -46,8 +46,8 @@
 <!-- ── Main assessment UI ───────────────────────────────────────────── -->
 <ng-container *ngIf="proctorState === 'in-progress'">
 
-  <!-- Fullscreen violation banner -->
-  <div class="violation-banner" *ngIf="violationWarning">
+  <!-- Fullscreen violation banner (proctored tasks only) -->
+  <div class="violation-banner" *ngIf="requiresProctoring && violationWarning">
     <mat-icon>warning</mat-icon>
     <span>You exited fullscreen — violation #{{ violationCount }} recorded. Return to fullscreen to continue.</span>
     <button class="reenter-btn" (click)="proctor.enterFullscreen()">Return to fullscreen</button>
@@ -66,12 +66,12 @@
         <mat-icon>people</mat-icon>
         <span>{{ submittedCount }} submitted</span>
       </div>
-      <div class="proctor-status">
+      <div class="proctor-status" *ngIf="requiresProctoring">
         <mat-icon class="proctor-live-icon">videocam</mat-icon>
         <span>Proctored</span>
         <span class="violation-pill" *ngIf="violationCount > 0">{{ violationCount }} violation{{ violationCount !== 1 ? 's' : '' }}</span>
       </div>
-      <div class="tab-switch-status" [class.tab-switch-warning]="tabSwitchCount > 0">
+      <div class="tab-switch-status" *ngIf="requiresProctoring" [class.tab-switch-warning]="tabSwitchCount > 0">
         <mat-icon>tab</mat-icon>
         <span>Switches: {{ tabSwitchCount }}/{{ maxTabSwitches }}</span>
       </div>
@@ -145,7 +145,7 @@
     </div>
   </div>
 
-  <!-- Camera PiP -->
-  <video id="camera-pip" class="camera-pip" autoplay muted playsinline></video>
+  <!-- Camera PiP (only for proctored assessments) -->
+  <video id="camera-pip" class="camera-pip" autoplay muted playsinline *ngIf="requiresProctoring"></video>
 
 </ng-container>

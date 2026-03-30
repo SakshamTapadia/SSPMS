@@ -20,6 +20,9 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
   loading = true;
   submitting = false;
 
+  /** True only for MCQ/Code-only tasks. Link/Assessment tasks bypass fullscreen. */
+  requiresProctoring = true;
+
   proctorState: ProctorState = 'requesting';
   proctorError = '';
   violationWarning = false;
@@ -42,6 +45,31 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     this.taskId = this.route.snapshot.paramMap.get('id')!;
+
+    // Pre-check question types before showing the proctor gate.
+    // Tasks with Link or Assessment questions must not require fullscreen
+    // because the employee needs to switch windows to paste a URL.
+    await new Promise<void>(resolve => {
+      this.api.getQuestions(this.taskId).subscribe({
+        next: qs => {
+          const hasLinkOrAssessment = qs.some(q => q.type === 'Link' || q.type === 'Assessment');
+          if (hasLinkOrAssessment) {
+            this.requiresProctoring = false;
+            this.questions = qs;
+          }
+          resolve();
+        },
+        error: () => resolve()  // couldn't pre-load — default to proctored
+      });
+    });
+
+    if (!this.requiresProctoring) {
+      // Skip camera/mic request and fullscreen — go straight to the assessment
+      this.proctorState = 'in-progress';
+      this.loadSubmission();
+      return;
+    }
+
     await this.requestPermissions();
   }
 
@@ -71,6 +99,8 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
 
   private attachProctorListeners(): void {
     this.fullscreenCleanup = this.proctor.onFullscreenChange(() => {
+      // Ignore fullscreen exit caused by the submit/confirm dialog or auto-submit
+      if (this.submitting) return;
       if (!this.proctor.isFullscreen()) {
         this.proctor.violationCount++;
         this.violationWarning = true;
@@ -106,11 +136,15 @@ export class TaskAttemptComponent implements OnInit, OnDestroy {
       next: sub => {
         this.submission = sub;
         sub.answers.forEach(a => this.answers[a.questionId] = a.answerText ?? '');
-        this.api.getQuestions(this.taskId).subscribe(q => {
-          this.questions = q;
+        const loadQuestions$ = this.questions.length > 0
+          ? new Promise<void>(resolve => resolve())  // already pre-loaded
+          : new Promise<void>(resolve => {
+              this.api.getQuestions(this.taskId).subscribe(q => { this.questions = q; resolve(); });
+            });
+        loadQuestions$.then(() => {
           this.loading = false;
           this.proctorState = 'in-progress';
-          setTimeout(() => this.attachCameraPreview(), 50);
+          if (this.requiresProctoring) setTimeout(() => this.attachCameraPreview(), 50);
         });
         this.startTimer(sub);
         this.signalR.connectSubmissions(this.taskId);
