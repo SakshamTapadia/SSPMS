@@ -75,14 +75,18 @@ public class AuthController : BaseController
     [HttpPost("forgot-password"), AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        try { await _auth.ForgotPasswordAsync(request.Email); }
+        var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+        try
+        {
+            await _auth.ForgotPasswordAsync(request.Email);
+            return Ok(new { message = "OTP sent to your email." });
+        }
         catch (Exception ex)
         {
-            // OTP was saved — email delivery failed. Log and return success so we don't leak info.
-            var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+            // OTP was saved to DB but email delivery failed — let the frontend know so user can retry.
             logger.LogError(ex, "Email delivery failed for forgot-password: {Email}", request.Email);
+            return StatusCode(503, new { message = "OTP generated but email delivery failed. Please try again or contact support." });
         }
-        return Ok(new { message = "If that email exists, an OTP has been sent." });
     }
 
     [HttpPost("verify-otp"), AllowAnonymous]

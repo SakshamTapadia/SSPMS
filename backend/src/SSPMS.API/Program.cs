@@ -114,10 +114,10 @@ using (var scope = app.Services.CreateScope())
     }
     else
     {
-        // Always sync email, name, password and verified flag for the admin account
-        existingAdmin.Email = adminEmail;
+        // Only sync email if no other user already owns it (prevent unique constraint crash)
+        var emailTaken = await db.Users.AnyAsync(u => u.Email == adminEmail && u.Id != existingAdmin.Id);
+        if (!emailTaken) existingAdmin.Email = adminEmail;
         existingAdmin.Name = "Saksham Tapadia";
-        existingAdmin.PasswordHash = BC.HashPassword("Admin@1234");
         existingAdmin.IsActive = true;
         existingAdmin.IsEmailVerified = true;
     }
