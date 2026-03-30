@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { ClassDto, ClassReportDto } from '../../../core/models';
 
@@ -16,20 +17,24 @@ export class ReportsComponent implements OnInit {
   reportLoading = false;
   taskColumns = ['title', 'submitted', 'avgScore', 'completion'];
 
+  private reportSub?: Subscription;
+
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
     this.api.getClasses().subscribe({
-      next: c => { this.classes = c; this.loading = false; if (c.length) this.selectClass(c[0]); },
+      next: c => { this.classes = c; this.loading = false; },
       error: () => { this.loading = false; }
     });
   }
 
   selectClass(cls: ClassDto): void {
+    // Cancel any in-flight request so a stale response can't overwrite a newer selection
+    this.reportSub?.unsubscribe();
     this.selectedClass = cls;
     this.report = null;
     this.reportLoading = true;
-    this.api.getClassReport(cls.id).subscribe({
+    this.reportSub = this.api.getClassReport(cls.id).subscribe({
       next: r => { this.report = r; this.reportLoading = false; },
       error: () => { this.reportLoading = false; }
     });

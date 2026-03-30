@@ -8,6 +8,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { UserProfile } from '../../../core/models';
 import { ChangePasswordDialogComponent } from '../../../shared/components/change-password-dialog/change-password-dialog.component';
 import { NotificationsDialogComponent } from '../../../shared/components/notifications-dialog/notifications-dialog.component';
+import { SwitchToAdminDialogComponent } from '../../../shared/components/switch-to-admin-dialog/switch-to-admin-dialog.component';
+import { Router } from '@angular/router';
 
 @Component({ selector: 'app-layout', standalone: false, templateUrl: './layout.component.html', styleUrl: './layout.component.scss' })
 export class LayoutComponent implements OnInit {
@@ -15,7 +17,7 @@ export class LayoutComponent implements OnInit {
   sidebarOpen = false;
   user$: Observable<UserProfile | null>;
 
-  constructor(public auth: AuthService, private api: ApiService, private signalR: SignalRService, private snack: MatSnackBar, private dialog: MatDialog) {
+  constructor(public auth: AuthService, private api: ApiService, private signalR: SignalRService, private snack: MatSnackBar, private dialog: MatDialog, private router: Router) {
     this.user$ = auth.user$;
   }
 
@@ -27,6 +29,12 @@ export class LayoutComponent implements OnInit {
   openChangePassword(): void { this.dialog.open(ChangePasswordDialogComponent, { width: '420px' }); }
 
   openNotifications(): void { this.dialog.open(NotificationsDialogComponent, { width: '420px' }); }
+
+  switchToAdmin(): void {
+    const email = this.auth.currentUser?.email ?? '';
+    this.dialog.open(SwitchToAdminDialogComponent, { width: '440px', data: email })
+      .afterClosed().subscribe(confirmed => { if (confirmed) this.router.navigate(['/admin/dashboard']); });
+  }
 
   logout(): void { this.auth.logout(); }
   toggleSidebar(): void { this.sidebarOpen = !this.sidebarOpen; }

@@ -185,7 +185,11 @@ public class ReportService : IReportService
         ws2.Cell(1, tasks.Count + 2).Value = "Total";
         ws2.Cell(1, tasks.Count + 3).Value = "Avg %";
 
-        var subLookup = submissions.ToDictionary(s => (s.EmployeeId, s.TaskId));
+        // Use GroupBy + First to handle edge cases where an employee has more than one
+        // non-draft submission for the same task (e.g. Submitted + Malpractice).
+        var subLookup = submissions
+            .GroupBy(s => (s.EmployeeId, s.TaskId))
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.SubmittedAt ?? DateTime.MinValue).First());
         for (int r = 0; r < employees.Count; r++)
         {
             var emp = employees[r];

@@ -129,7 +129,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
   }
 
   saveTask(): void {
-    if (this.taskForm.invalid) return;
+    if (this.taskForm.invalid) { this.taskForm.markAllAsTouched(); return; }
     this.saving = true;
     const v = this.taskForm.getRawValue();
     const common = {
@@ -163,6 +163,17 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  deleteTask(): void {
+    if (!confirm('Delete this task? This cannot be undone.')) return;
+    this.api.deleteTask(this.taskId).subscribe({
+      next: () => {
+        this.snack.open('Task deleted.', '', { duration: 2500 });
+        this.router.navigate(['/trainer/tasks']);
+      },
+      error: err => this.snack.open(err?.error?.message ?? 'Failed to delete task.', 'Close', { duration: 4000 })
+    });
+  }
+
   publish(): void {
     if (!this.questions.length) {
       this.snack.open('Add at least one question before publishing.', 'Close', { duration: 3000 });
@@ -172,9 +183,8 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     this.publishing = true;
     this.api.publishTask(this.taskId).pipe(finalize(() => this.publishing = false)).subscribe({
       next: () => {
-        if (this.task) this.task = { ...this.task, status: 'Published' };
-        this.taskForm.disable();
         this.snack.open('Task published!', '', { duration: 2500 });
+        this.router.navigate(['/trainer/tasks']);
       },
       error: err => {
         this.snack.open(err?.error?.message ?? 'Failed to publish.', 'Close', { duration: 4000 });
@@ -217,7 +227,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
   }
 
   saveQuestion(): void {
-    if (this.qForm.invalid) return;
+    if (this.qForm.invalid) { this.qForm.markAllAsTouched(); return; }
     this.savingQ = true;
     const v = this.qForm.value;
     const existingQ = this.questions.find(q => q.id === this.editingQId);

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -19,7 +19,7 @@ function passwordsMatch(g: AbstractControl) {
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
-export class RegisterComponent implements OnInit {
+export class RegisterComponent implements OnInit, OnDestroy {
   form: FormGroup;
   otpForm: FormGroup;
   loading = false;
@@ -29,6 +29,7 @@ export class RegisterComponent implements OnInit {
   pendingEmail = '';
   otpLoading = false;
   resendLoading = false;
+  private gsiRetryTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     private fb: FormBuilder,
@@ -55,9 +56,13 @@ export class RegisterComponent implements OnInit {
     this.initGoogleSignIn();
   }
 
+  ngOnDestroy(): void {
+    clearTimeout(this.gsiRetryTimer);
+  }
+
   private initGoogleSignIn(): void {
     if (typeof google === 'undefined') {
-      setTimeout(() => this.initGoogleSignIn(), 500);
+      this.gsiRetryTimer = setTimeout(() => this.initGoogleSignIn(), 500);
       return;
     }
     try {
@@ -67,10 +72,8 @@ export class RegisterComponent implements OnInit {
         auto_select: false,
         cancel_on_tap_outside: true
       });
-      google.accounts.id.renderButton(
-        document.getElementById('google-register-btn'),
-        { theme: 'outline', size: 'large', width: 360, text: 'signup_with' }
-      );
+      const btn = document.getElementById('google-register-btn');
+      if (btn) google.accounts.id.renderButton(btn, { theme: 'outline', size: 'large', width: 360, text: 'signup_with' });
     } catch { /* GIS unavailable */ }
   }
 

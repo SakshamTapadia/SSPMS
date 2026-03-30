@@ -8,7 +8,7 @@
       <div class="brand-logo">S</div>
       <div class="brand-text">
         <span class="brand-name">SSPMS</span>
-        <span class="brand-role">Trainer</span>
+        <span class="brand-role">{{ auth.role === 'Admin' ? 'Admin' : 'Trainer' }}</span>
       </div>
       <button class="sidebar-close-btn" (click)="closeSidebar()">
         <mat-icon>close</mat-icon>
@@ -65,10 +65,10 @@
         <span class="page-breadcrumb">Trainer Portal</span>
       </div>
       <div class="topbar-right">
-        <button class="topbar-btn" (click)="openNotifications()" title="Notifications">
-          <mat-icon [matBadge]="unreadCount > 0 ? unreadCount : null" matBadgeSize="small" matBadgeColor="warn">
-            notifications
-          </mat-icon>
+        <button *ngIf="auth.role === 'Admin'" class="topbar-btn admin-back-btn"
+                (click)="switchToAdmin()" title="Switch to Admin Console">
+          <mat-icon>admin_panel_settings</mat-icon>
+          <span class="admin-back-label">Admin Console</span>
         </button>
       </div>
     </header>

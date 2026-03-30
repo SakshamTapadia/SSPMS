@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -14,7 +14,7 @@ declare const google: any;
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
   form: FormGroup;
   otpForm: FormGroup;
   loading = false;
@@ -23,6 +23,7 @@ export class LoginComponent implements OnInit {
   pendingVerificationEmail = '';
   otpLoading = false;
   resendLoading = false;
+  private gsiRetryTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     private fb: FormBuilder,
@@ -46,9 +47,13 @@ export class LoginComponent implements OnInit {
     this.initGoogleSignIn();
   }
 
+  ngOnDestroy(): void {
+    clearTimeout(this.gsiRetryTimer);
+  }
+
   private initGoogleSignIn(): void {
     if (typeof google === 'undefined') {
-      setTimeout(() => this.initGoogleSignIn(), 500);
+      this.gsiRetryTimer = setTimeout(() => this.initGoogleSignIn(), 500);
       return;
     }
     try {
@@ -58,10 +63,8 @@ export class LoginComponent implements OnInit {
         auto_select: false,
         cancel_on_tap_outside: true
       });
-      google.accounts.id.renderButton(
-        document.getElementById('google-signin-btn'),
-        { theme: 'outline', size: 'large', width: 360, text: 'signin_with' }
-      );
+      const btn = document.getElementById('google-signin-btn');
+      if (btn) google.accounts.id.renderButton(btn, { theme: 'outline', size: 'large', width: 360, text: 'signin_with' });
     } catch { /* Google GIS not available */ }
   }
 

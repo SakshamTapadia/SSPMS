@@ -53,7 +53,7 @@ export class ClassListComponent implements OnInit {
   }
 
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving = true;
     const v = this.form.value;
     const req = {
@@ -79,7 +79,7 @@ export class ClassListComponent implements OnInit {
     });
   }
 
-  openDetail(cls: ClassDto): void { this.router.navigate(['/trainer/classes', cls.id]); }
+  openDetail(cls: ClassDto): void { this.router.navigate(['/admin/classes', cls.id]); }
 
   deleteClass(cls: ClassDto): void {
     if (!confirm(`Delete class "${cls.name}"? This will permanently delete all its tasks and submissions.`)) return;

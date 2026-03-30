@@ -57,6 +57,9 @@ public class TaskService : ITaskService
 
     public async Task<ServiceResult<TaskDto>> CreateTaskAsync(CreateTaskRequest request, Guid trainerId)
     {
+        if (request.EndAt <= request.StartAt)
+            return ServiceResult<TaskDto>.Failure("End date/time must be after start date/time.");
+
         var @class = await _db.Classes.FindAsync(request.ClassId);
         if (@class == null) return ServiceResult<TaskDto>.Failure("Class not found.");
 
@@ -86,6 +89,9 @@ public class TaskService : ITaskService
 
     public async Task<ServiceResult<TaskDto>> UpdateTaskAsync(Guid id, UpdateTaskRequest request, Guid trainerId)
     {
+        if (request.EndAt <= request.StartAt)
+            return ServiceResult<TaskDto>.Failure("End date/time must be after start date/time.");
+
         var task = await _db.Tasks.Include(t => t.Class).Include(t => t.CreatedByTrainer).FirstOrDefaultAsync(t => t.Id == id);
         if (task == null) return ServiceResult<TaskDto>.Failure("Not found.");
         if (task.CreatedByTrainerId != trainerId && !await IsAdminAsync(trainerId)) return ServiceResult<TaskDto>.Failure("Access denied.");

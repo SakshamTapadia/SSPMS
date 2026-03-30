@@ -6,6 +6,7 @@ import { UserListComponent } from './user-list/user-list.component';
 import { ClassListComponent } from './class-list/class-list.component';
 import { AuditLogComponent } from './audit-log/audit-log.component';
 import { ReportsComponent } from './reports/reports.component';
+import { ClassDetailComponent } from '../trainer/class-detail/class-detail.component';
 
 const routes: Routes = [
   {
@@ -14,6 +15,7 @@ const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'users', component: UserListComponent },
       { path: 'classes', component: ClassListComponent },
+      { path: 'classes/:id', component: ClassDetailComponent },
       { path: 'audit-log', component: AuditLogComponent },
       { path: 'reports', component: ReportsComponent }
     ]

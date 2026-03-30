@@ -24,6 +24,9 @@
         <mat-spinner *ngIf="publishing" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
         {{ publishing ? 'Publishing…' : 'Publish' }}
       </button>
+      <button mat-raised-button color="warn" *ngIf="!isNew && isDraft" (click)="deleteTask()">
+        <mat-icon>delete</mat-icon> Delete Task
+      </button>
     </div>
   </div>
 

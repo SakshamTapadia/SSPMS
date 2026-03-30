@@ -50,7 +50,7 @@ export class ClassListComponent implements OnInit {
   toggleCreate(): void { this.showCreateForm = !this.showCreateForm; if (!this.showCreateForm) this.form.reset(); }
 
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving = true;
     const v = this.form.value;
     const req = {
@@ -73,6 +73,18 @@ export class ClassListComponent implements OnInit {
         this.snack.open(err?.error?.message ?? 'Failed to create class.', '', { duration: 3000 });
         this.saving = false;
       }
+    });
+  }
+
+  deleteClass(id: string, event: Event): void {
+    event.stopPropagation();
+    if (!confirm('Delete this class? This cannot be undone.')) return;
+    this.api.deleteClass(id).subscribe({
+      next: () => {
+        this.classes = this.classes.filter(c => c.id !== id);
+        this.snack.open('Class deleted.', '', { duration: 2500 });
+      },
+      error: (err) => this.snack.open(err?.error?.message ?? 'Failed to delete class.', '', { duration: 3000 })
     });
   }
 

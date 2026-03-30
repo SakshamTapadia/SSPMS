@@ -32,6 +32,9 @@ public class ClassService : IClassService
 
     public async Task<ServiceResult<ClassDto>> CreateClassAsync(CreateClassRequest request)
     {
+        if (request.EndDate <= request.StartDate)
+            return ServiceResult<ClassDto>.Failure("End date must be after start date.");
+
         var trainer = await _db.Users.FindAsync(request.TrainerId);
         if (trainer == null || trainer.Role != UserRole.Trainer) return ServiceResult<ClassDto>.Failure("Trainer not found.");
 
@@ -52,6 +55,9 @@ public class ClassService : IClassService
 
     public async Task<ServiceResult<ClassDto>> UpdateClassAsync(Guid id, UpdateClassRequest request)
     {
+        if (request.EndDate <= request.StartDate)
+            return ServiceResult<ClassDto>.Failure("End date must be after start date.");
+
         var @class = await _db.Classes.Include(c => c.Trainer).FirstOrDefaultAsync(c => c.Id == id);
         if (@class == null) return ServiceResult<ClassDto>.Failure("Class not found.");
 
@@ -98,8 +104,8 @@ public class ClassService : IClassService
         if (user == null || user.Role != UserRole.Employee)
             return ServiceResult.Failure("Only employees can be enrolled in a class.");
 
-        if (await _db.ClassEnrollments.AnyAsync(e => e.EmployeeId == employeeId && e.Status == EnrollmentStatus.Active))
-            return ServiceResult.Failure("Employee is already enrolled in a class. Transfer them instead.");
+        if (await _db.ClassEnrollments.AnyAsync(e => e.EmployeeId == employeeId && e.ClassId == classId && e.Status == EnrollmentStatus.Active))
+            return ServiceResult.Failure("Employee is already enrolled in this class.");
 
         _db.ClassEnrollments.Add(new ClassEnrollment { EmployeeId = employeeId, ClassId = classId });
         await _db.SaveChangesAsync();

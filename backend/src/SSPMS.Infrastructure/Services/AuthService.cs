@@ -69,6 +69,9 @@ public class AuthService : IAuthService
             return ServiceResult<AuthResponse>.Failure("Invalid email or password.");
         }
 
+        if (!user.IsEmailVerified)
+            return ServiceResult<AuthResponse>.Failure("EMAIL_NOT_VERIFIED");
+
         if (user.TwoFAEnabled)
         {
             if (string.IsNullOrEmpty(request.TotpCode))

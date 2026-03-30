@@ -27,18 +27,26 @@ public class EmailService : IEmailService
         message.Body = new TextPart("html") { Text = WrapTemplate(subject, htmlBody) };
 
         using var client = new SmtpClient();
-        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(45));
+        using var mainCts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(45));
 
-        // Try 465/SSL first (more reliable on cloud hosts), then 587/STARTTLS
-        Exception? lastEx = null;
-        foreach (var (p, mode) in new[] {
-            (465, MailKit.Security.SecureSocketOptions.SslOnConnect),
-            (587, MailKit.Security.SecureSocketOptions.StartTls) })
+        // Try configured port first, then fall back. Each connection attempt gets its own
+        // short timeout so a silently-dropped port (e.g. 465 on cloud hosts) can't starve
+        // the fallback attempt.
+        var portModes = new[]
         {
+            (port, port == 465 ? MailKit.Security.SecureSocketOptions.SslOnConnect : MailKit.Security.SecureSocketOptions.StartTls),
+            (port == 587 ? 465 : 587, port == 587 ? MailKit.Security.SecureSocketOptions.SslOnConnect : MailKit.Security.SecureSocketOptions.StartTls)
+        };
+
+        Exception? lastEx = null;
+        foreach (var (p, mode) in portModes)
+        {
+            using var connectCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(mainCts.Token);
+            connectCts.CancelAfter(TimeSpan.FromSeconds(12));
             try
             {
                 if (client.IsConnected) await client.DisconnectAsync(false);
-                await client.ConnectAsync(host, p, mode, cts.Token);
+                await client.ConnectAsync(host, p, mode, connectCts.Token);
                 lastEx = null;
                 break;
             }
@@ -49,14 +57,14 @@ public class EmailService : IEmailService
 
         try
         {
-            await client.AuthenticateAsync(username, password, cts.Token);
+            await client.AuthenticateAsync(username, password, mainCts.Token);
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException($"SMTP authentication failed for '{username}'. Ensure the app password is current and 2FA is enabled on the Google account. Error: {ex.Message}", ex);
         }
 
-        await client.SendAsync(message, cts.Token);
+        await client.SendAsync(message, mainCts.Token);
         await client.DisconnectAsync(true);
     }
 

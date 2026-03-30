@@ -8,7 +8,6 @@ import { TaskListComponent } from './task-list/task-list.component';
 import { TaskDetailComponent } from './task-detail/task-detail.component';
 import { TaskEvaluateComponent } from './task-evaluate/task-evaluate.component';
 import { ClassListComponent } from './class-list/class-list.component';
-import { ClassDetailComponent } from './class-detail/class-detail.component';
 import { LeaderboardComponent } from './leaderboard/leaderboard.component';
 import { ReportsComponent } from './reports/reports.component';
 import { LayoutComponent } from './layout/layout.component';
@@ -21,7 +20,6 @@ import { LayoutComponent } from './layout/layout.component';
     TaskDetailComponent,
     TaskEvaluateComponent,
     ClassListComponent,
-    ClassDetailComponent,
     LeaderboardComponent,
     ReportsComponent,
     LayoutComponent
