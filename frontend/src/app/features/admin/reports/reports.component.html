@@ -70,6 +70,14 @@
               </div>
             </td>
           </ng-container>
+          <ng-container matColumnDef="export">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let c">
+              <button mat-stroked-button color="primary" (click)="exportExcel(c.classId, c.className)">
+                <mat-icon>download</mat-icon> Export
+              </button>
+            </td>
+          </ng-container>
           <tr mat-header-row *matHeaderRowDef="classColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: classColumns;"></tr>
         </table>

@@ -10,7 +10,7 @@ import { ApiService } from '../../../core/services/api.service';
 export class ReportsComponent implements OnInit {
   report: any = null;
   loading = true;
-  classColumns = ['className', 'trainerName', 'employees', 'tasks', 'avgScore', 'completion'];
+  classColumns = ['className', 'trainerName', 'employees', 'tasks', 'avgScore', 'completion', 'export'];
 
   constructor(private api: ApiService) {}
 
@@ -19,6 +19,12 @@ export class ReportsComponent implements OnInit {
       next: r => { this.report = r; this.loading = false; },
       error: () => { this.loading = false; }
     });
+  }
+
+  exportExcel(classId: string, className: string): void {
+    this.api.exportClassReportExcel(classId).subscribe(blob =>
+      this.api.downloadBlob(blob, `${className}-report.xlsx`)
+    );
   }
 
   pct(v: number): string { return (v * 100).toFixed(1) + '%'; }

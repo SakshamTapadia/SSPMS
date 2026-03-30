@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiService } from '../../../core/services/api.service';
-import { ClassDto, UserDto } from '../../../core/models';
+import { ClassDto, UserDto, TaskDto } from '../../../core/models';
 
 @Component({
   selector: 'app-class-detail',
@@ -15,11 +15,16 @@ export class ClassDetailComponent implements OnInit {
   cls: ClassDto | null = null;
   employees: UserDto[] = [];
   allEmployees: UserDto[] = [];
+  tasks: TaskDto[] = [];
   loading = true;
   showAddForm = false;
+  showEditForm = false;
   adding = false;
+  saving = false;
   addForm: FormGroup;
+  editForm: FormGroup;
   displayedColumns = ['name', 'email', 'actions'];
+  taskColumns = ['title', 'status', 'startAt', 'endAt', 'actions'];
   searchEmployees = '';
 
   get filteredAllEmployees(): UserDto[] {
@@ -30,8 +35,13 @@ export class ClassDetailComponent implements OnInit {
     );
   }
 
+  get portalBase(): string {
+    return this.router.url.startsWith('/admin') ? '/admin' : '/trainer';
+  }
+
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private api: ApiService,
     private fb: FormBuilder,
     private snack: MatSnackBar
@@ -40,6 +50,13 @@ export class ClassDetailComponent implements OnInit {
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]]
+    });
+    this.editForm = this.fb.group({
+      name: ['', [Validators.required, Validators.maxLength(100)]],
+      description: [''],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      skillTags: ['']
     });
   }
 
@@ -55,9 +72,71 @@ export class ClassDetailComponent implements OnInit {
     this.api.getUsers(1, 200, 'Employee').subscribe({
       next: r => this.allEmployees = r.items
     });
+    this.api.getTasks(id).subscribe({
+      next: t => this.tasks = t
+    });
   }
 
-  toggleAdd(): void { this.showAddForm = !this.showAddForm; this.searchEmployees = ''; this.addForm.reset(); }
+  goToTask(taskId: string): void {
+    this.router.navigate([this.portalBase, 'tasks', taskId]);
+  }
+
+  createTask(): void {
+    this.router.navigate([this.portalBase, 'tasks', 'new'], { queryParams: { classId: this.cls!.id } });
+  }
+
+  toggleAdd(): void {
+    this.showAddForm = !this.showAddForm;
+    if (this.showAddForm) this.showEditForm = false;
+    this.searchEmployees = '';
+    this.addForm.reset();
+  }
+
+  toggleEdit(): void {
+    this.showEditForm = !this.showEditForm;
+    if (this.showEditForm) {
+      this.showAddForm = false;
+      this.editForm.patchValue({
+        name: this.cls!.name,
+        description: this.cls!.description ?? '',
+        startDate: this.cls!.startDate ? new Date(this.cls!.startDate) : null,
+        endDate: this.cls!.endDate ? new Date(this.cls!.endDate) : null,
+        skillTags: this.cls!.skillTags ?? ''
+      });
+    }
+  }
+
+  saveEdit(): void {
+    if (this.editForm.invalid) { this.editForm.markAllAsTouched(); return; }
+    this.saving = true;
+    const v = this.editForm.value;
+    const req = {
+      name: v.name,
+      description: v.description || undefined,
+      startDate: this.toDateOnly(v.startDate),
+      endDate: this.toDateOnly(v.endDate),
+      skillTags: v.skillTags ? v.skillTags.split(',').map((s: string) => s.trim()).filter(Boolean).join(',') : undefined,
+      trainerId: this.cls!.trainerId   // preserve existing trainer
+    };
+    this.api.updateClass(this.cls!.id, req as any).subscribe({
+      next: updated => {
+        this.cls = updated;
+        this.showEditForm = false;
+        this.snack.open('Class updated!', '', { duration: 2500 });
+        this.saving = false;
+      },
+      error: err => {
+        this.snack.open(err?.error?.message ?? 'Failed to update class.', 'Close', { duration: 3000 });
+        this.saving = false;
+      }
+    });
+  }
+
+  private toDateOnly(date: any): string {
+    if (!date) return '';
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
 
   enrollExisting(employee: UserDto): void {
     if (!this.cls) return;

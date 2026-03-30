@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { TaskDto, ClassDto } from '../../../core/models';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -10,7 +11,9 @@ export class TaskListComponent implements OnInit {
   selectedClass = '';
   loading = true;
 
-  constructor(private api: ApiService, private snack: MatSnackBar) {}
+  get portalBase(): string { return this.router.url.startsWith('/admin') ? '/admin' : '/trainer'; }
+
+  constructor(private api: ApiService, private snack: MatSnackBar, private router: Router) {}
 
   ngOnInit(): void {
     this.api.getClasses().subscribe({ next: c => this.classes = c, error: () => {} });

@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../../core/services/auth.service';
 import { SignalRService } from '../../../core/services/signalr.service';
-import { environment } from '../../../../environments/environment';
+import { GoogleAuthService } from '../../../core/services/google-auth.service';
 
 declare const google: any;
 
@@ -36,7 +36,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
     private auth: AuthService,
     private signalR: SignalRService,
     private router: Router,
-    private snack: MatSnackBar
+    private snack: MatSnackBar,
+    private googleAuth: GoogleAuthService
   ) {
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
@@ -53,6 +54,12 @@ export class RegisterComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    const u = this.auth.currentUser;
+    if (u) {
+      const dest = u.role === 'Admin' ? '/admin/dashboard' : u.role === 'Trainer' ? '/trainer/dashboard' : '/employee/dashboard';
+      this.router.navigateByUrl(dest, { replaceUrl: true });
+      return;
+    }
     this.initGoogleSignIn();
   }
 
@@ -65,16 +72,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
       this.gsiRetryTimer = setTimeout(() => this.initGoogleSignIn(), 500);
       return;
     }
-    try {
-      google.accounts.id.initialize({
-        client_id: environment.googleClientId,
-        callback: (response: any) => this.handleGoogleCallback(response),
-        auto_select: false,
-        cancel_on_tap_outside: true
-      });
-      const btn = document.getElementById('google-register-btn');
-      if (btn) google.accounts.id.renderButton(btn, { theme: 'outline', size: 'large', width: 360, text: 'signup_with' });
-    } catch { /* GIS unavailable */ }
+    this.googleAuth.initialize((response) => this.handleGoogleCallback(response));
+    this.googleAuth.renderButton('google-register-btn', { theme: 'outline', size: 'large', width: 360, text: 'signup_with' });
   }
 
   private handleGoogleCallback(response: { credential: string }): void {

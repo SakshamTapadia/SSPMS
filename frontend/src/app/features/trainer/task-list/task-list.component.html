@@ -8,7 +8,7 @@
         <mat-option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</mat-option>
       </mat-select>
     </mat-form-field>
-    <button mat-raised-button color="primary" routerLink="/trainer/tasks/new"><mat-icon>add</mat-icon> New Task</button>
+    <button mat-raised-button color="primary" [routerLink]="[portalBase, 'tasks', 'new']"><mat-icon>add</mat-icon> New Task</button>
   </div>
 </div>
 
@@ -18,7 +18,7 @@
     <mat-table [dataSource]="tasks" *ngIf="!loading">
       <ng-container matColumnDef="title">
         <mat-header-cell *matHeaderCellDef>Title</mat-header-cell>
-        <mat-cell *matCellDef="let t"><a [routerLink]="['/trainer/tasks', t.id]">{{ t.title }}</a></mat-cell>
+        <mat-cell *matCellDef="let t"><a [routerLink]="[portalBase, 'tasks', t.id]">{{ t.title }}</a></mat-cell>
       </ng-container>
       <ng-container matColumnDef="class"><mat-header-cell *matHeaderCellDef>Class</mat-header-cell><mat-cell *matCellDef="let t">{{ t.className }}</mat-cell></ng-container>
       <ng-container matColumnDef="marks"><mat-header-cell *matHeaderCellDef>Marks</mat-header-cell><mat-cell *matCellDef="let t">{{ t.totalMarks }}</mat-cell></ng-container>
@@ -31,9 +31,9 @@
       <ng-container matColumnDef="actions">
         <mat-header-cell *matHeaderCellDef></mat-header-cell>
         <mat-cell *matCellDef="let t">
-          <button mat-icon-button [routerLink]="['/trainer/tasks', t.id]" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+          <button mat-icon-button [routerLink]="[portalBase, 'tasks', t.id]" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
           <button mat-icon-button (click)="publish(t.id)" *ngIf="t.status === 'Draft'" matTooltip="Publish" color="primary"><mat-icon>publish</mat-icon></button>
-          <button mat-icon-button [routerLink]="['/trainer/tasks', t.id, 'evaluate']" *ngIf="t.status !== 'Draft'" matTooltip="Evaluate"><mat-icon>grading</mat-icon></button>
+          <button mat-icon-button [routerLink]="[portalBase, 'tasks', t.id, 'evaluate']" *ngIf="t.status !== 'Draft'" matTooltip="Evaluate"><mat-icon>grading</mat-icon></button>
           <button mat-icon-button (click)="duplicate(t.id)" matTooltip="Duplicate"><mat-icon>content_copy</mat-icon></button>
           <button mat-icon-button (click)="delete(t.id)" *ngIf="t.status === 'Draft'" matTooltip="Delete" color="warn"><mat-icon>delete</mat-icon></button>
         </mat-cell>

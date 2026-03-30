@@ -36,6 +36,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
   get totalMarks(): number { return this.questions.reduce((s, q) => s + q.marks, 0); }
   get optionsArray(): FormArray { return this.qForm.get('options') as FormArray; }
   get isDraft(): boolean { return this.isNew || this.task?.status === 'Draft'; }
+  get portalBase(): string { return this.router.url.startsWith('/admin') ? '/admin' : '/trainer'; }
 
   constructor(
     private route: ActivatedRoute,
@@ -108,12 +109,13 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
           error: () => {
             this.loading = false;
             this.snack.open('Task not found.', 'Close', { duration: 3000 });
-            this.router.navigate(['/trainer/tasks']);
+            this.router.navigate([this.portalBase, 'tasks']);
           }
         });
       } else {
         this.taskId = '';
-        this.taskForm.reset({ durationMinutes: 60, startTime: '09:00', endTime: '17:00' });
+        const prefilledClassId = this.route.snapshot.queryParamMap.get('classId') ?? '';
+        this.taskForm.reset({ durationMinutes: 60, startTime: '09:00', endTime: '17:00', classId: prefilledClassId });
         this.taskForm.enable();
         this.loading = false;
       }
@@ -145,7 +147,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
       this.api.createTask({ ...common, classId: v.classId }).subscribe({
         next: t => {
           this.snack.open('Task created! Add questions below.', '', { duration: 3000 });
-          this.router.navigate(['/trainer/tasks', t.id]);
+          this.router.navigate([this.portalBase, 'tasks', t.id]);
         },
         error: err => {
           this.snack.open(err?.error?.message ?? 'Failed to create task.', 'Close', { duration: 4000 });
@@ -168,7 +170,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     this.api.deleteTask(this.taskId).subscribe({
       next: () => {
         this.snack.open('Task deleted.', '', { duration: 2500 });
-        this.router.navigate(['/trainer/tasks']);
+        this.router.navigate([this.portalBase, 'tasks']);
       },
       error: err => this.snack.open(err?.error?.message ?? 'Failed to delete task.', 'Close', { duration: 4000 })
     });
@@ -184,7 +186,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     this.api.publishTask(this.taskId).pipe(finalize(() => this.publishing = false)).subscribe({
       next: () => {
         this.snack.open('Task published!', '', { duration: 2500 });
-        this.router.navigate(['/trainer/tasks']);
+        this.router.navigate([this.portalBase, 'tasks']);
       },
       error: err => {
         this.snack.open(err?.error?.message ?? 'Failed to publish.', 'Close', { duration: 4000 });

@@ -6,14 +6,64 @@
         <h1 class="page-title">{{ cls.name }}</h1>
         <p class="page-sub">{{ cls.startDate | date:'mediumDate' }} – {{ cls.endDate | date:'mediumDate' }}</p>
       </div>
-      <button mat-raised-button color="primary" (click)="toggleAdd()">
-        <mat-icon>{{ showAddForm ? 'close' : 'person_add' }}</mat-icon>
-        {{ showAddForm ? 'Cancel' : 'Add Employee' }}
-      </button>
+      <div class="header-actions">
+        <button mat-stroked-button (click)="toggleEdit()">
+          <mat-icon>{{ showEditForm ? 'close' : 'edit' }}</mat-icon>
+          {{ showEditForm ? 'Cancel' : 'Edit Class' }}
+        </button>
+        <button mat-raised-button color="primary" (click)="toggleAdd()">
+          <mat-icon>{{ showAddForm ? 'close' : 'person_add' }}</mat-icon>
+          {{ showAddForm ? 'Cancel' : 'Add Employee' }}
+        </button>
+      </div>
     </div>
 
     <!-- Description -->
-    <p class="description" *ngIf="cls.description">{{ cls.description }}</p>
+    <p class="description" *ngIf="cls.description && !showEditForm">{{ cls.description }}</p>
+
+    <!-- Edit Class Panel -->
+    <mat-card *ngIf="showEditForm" class="add-panel">
+      <mat-card-header><mat-card-title>Edit Class</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="add-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Class Name</mat-label>
+            <input matInput formControlName="name">
+            <mat-error>Name is required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description" rows="2"></textarea>
+          </mat-form-field>
+          <div class="date-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Start Date</mat-label>
+              <input matInput [matDatepicker]="editStart" formControlName="startDate">
+              <mat-datepicker-toggle matIconSuffix [for]="editStart"></mat-datepicker-toggle>
+              <mat-datepicker #editStart></mat-datepicker>
+              <mat-error>Required</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>End Date</mat-label>
+              <input matInput [matDatepicker]="editEnd" formControlName="endDate">
+              <mat-datepicker-toggle matIconSuffix [for]="editEnd"></mat-datepicker-toggle>
+              <mat-datepicker #editEnd></mat-datepicker>
+              <mat-error>Required</mat-error>
+            </mat-form-field>
+          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Skill Tags (comma-separated)</mat-label>
+            <input matInput formControlName="skillTags" placeholder="e.g. .NET, C#, SQL">
+          </mat-form-field>
+          <div class="form-actions">
+            <button mat-raised-button color="primary" type="submit" [disabled]="editForm.invalid || saving">
+              <mat-spinner *ngIf="saving" diameter="18"></mat-spinner>
+              {{ saving ? 'Saving...' : 'Save Changes' }}
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
 
     <!-- Add Employee Panel -->
     <mat-card *ngIf="showAddForm" class="add-panel">
@@ -70,6 +120,54 @@
             </div>
           </mat-tab>
         </mat-tab-group>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Tasks Section -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>Tasks ({{ tasks.length }})</mat-card-title>
+        <div class="card-header-actions">
+          <button mat-raised-button color="primary" (click)="createTask()">
+            <mat-icon>add</mat-icon> New Task
+          </button>
+        </div>
+      </mat-card-header>
+      <mat-card-content>
+        <div *ngIf="tasks.length === 0" class="empty-state">
+          <mat-icon>assignment_outlined</mat-icon>
+          <p>No tasks yet. Click "New Task" to create one.</p>
+        </div>
+        <table *ngIf="tasks.length > 0" mat-table [dataSource]="tasks" class="full-width">
+          <ng-container matColumnDef="title">
+            <th mat-header-cell *matHeaderCellDef>Title</th>
+            <td mat-cell *matCellDef="let t">{{ t.title }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let t">
+              <span class="status-chip" [class]="'status-' + t.status.toLowerCase()">{{ t.status }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="startAt">
+            <th mat-header-cell *matHeaderCellDef>Opens</th>
+            <td mat-cell *matCellDef="let t">{{ t.startAt | date:'dd MMM yyyy HH:mm' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="endAt">
+            <th mat-header-cell *matHeaderCellDef>Closes</th>
+            <td mat-cell *matCellDef="let t">{{ t.endAt | date:'dd MMM yyyy HH:mm' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let t">
+              <button mat-stroked-button color="primary" (click)="goToTask(t.id)">
+                <mat-icon>open_in_new</mat-icon> Manage
+              </button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="taskColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: taskColumns;"></tr>
+        </table>
       </mat-card-content>
     </mat-card>
 

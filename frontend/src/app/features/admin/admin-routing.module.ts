@@ -7,6 +7,9 @@ import { ClassListComponent } from './class-list/class-list.component';
 import { AuditLogComponent } from './audit-log/audit-log.component';
 import { ReportsComponent } from './reports/reports.component';
 import { ClassDetailComponent } from '../trainer/class-detail/class-detail.component';
+import { TaskListComponent } from '../trainer/task-list/task-list.component';
+import { TaskDetailComponent } from '../trainer/task-detail/task-detail.component';
+import { TaskEvaluateComponent } from '../trainer/task-evaluate/task-evaluate.component';
 
 const routes: Routes = [
   {
@@ -16,6 +19,9 @@ const routes: Routes = [
       { path: 'users', component: UserListComponent },
       { path: 'classes', component: ClassListComponent },
       { path: 'classes/:id', component: ClassDetailComponent },
+      { path: 'tasks', component: TaskListComponent },
+      { path: 'tasks/:id', component: TaskDetailComponent },
+      { path: 'tasks/:id/evaluate', component: TaskEvaluateComponent },
       { path: 'audit-log', component: AuditLogComponent },
       { path: 'reports', component: ReportsComponent }
     ]

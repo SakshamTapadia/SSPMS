@@ -28,7 +28,11 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IAuditService, AuditService>();
-        services.AddScoped<IEmailService, EmailService>();
+        services.AddHttpClient();
+        if (!string.IsNullOrWhiteSpace(configuration["Resend:ApiKey"]))
+            services.AddScoped<IEmailService, ResendEmailService>();
+        else
+            services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<ISignalRService, SignalRService>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
 

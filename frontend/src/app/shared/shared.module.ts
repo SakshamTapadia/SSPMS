@@ -4,6 +4,9 @@ import { ChangePasswordDialogComponent } from './components/change-password-dial
 import { NotificationsDialogComponent } from './components/notifications-dialog/notifications-dialog.component';
 import { SwitchToAdminDialogComponent } from './components/switch-to-admin-dialog/switch-to-admin-dialog.component';
 import { ClassDetailComponent } from '../features/trainer/class-detail/class-detail.component';
+import { TaskListComponent } from '../features/trainer/task-list/task-list.component';
+import { TaskDetailComponent } from '../features/trainer/task-detail/task-detail.component';
+import { TaskEvaluateComponent } from '../features/trainer/task-evaluate/task-evaluate.component';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
@@ -49,8 +52,8 @@ const MATERIAL = [
 ];
 
 @NgModule({
-  declarations: [ChangePasswordDialogComponent, NotificationsDialogComponent, SwitchToAdminDialogComponent, ClassDetailComponent],
+  declarations: [ChangePasswordDialogComponent, NotificationsDialogComponent, SwitchToAdminDialogComponent, ClassDetailComponent, TaskListComponent, TaskDetailComponent, TaskEvaluateComponent],
   imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, ...MATERIAL],
-  exports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, ...MATERIAL, ChangePasswordDialogComponent, NotificationsDialogComponent, SwitchToAdminDialogComponent, ClassDetailComponent]
+  exports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, ...MATERIAL, ChangePasswordDialogComponent, NotificationsDialogComponent, SwitchToAdminDialogComponent, ClassDetailComponent, TaskListComponent, TaskDetailComponent, TaskEvaluateComponent]
 })
 export class SharedModule {}
