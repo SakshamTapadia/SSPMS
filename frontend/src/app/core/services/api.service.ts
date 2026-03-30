@@ -112,6 +112,7 @@ export class ApiService {
   exportClassReportPdf(classId: string): Observable<Blob> { return this.http.get(`${this.base}/reports/class/${classId}/export`, { params: { format: 'pdf' }, responseType: 'blob' }); }
   exportClassReportExcel(classId: string): Observable<Blob> { return this.http.get(`${this.base}/reports/class/${classId}/export`, { params: { format: 'xlsx' }, responseType: 'blob' }); }
   exportEmployeeReportPdf(): Observable<Blob> { return this.http.get(`${this.base}/reports/me/export`, { responseType: 'blob' }); }
+  exportTaskResultsGridExcel(taskId: string): Observable<Blob> { return this.http.get(`${this.base}/reports/task/${taskId}/export`, { responseType: 'blob' }); }
 
   // ── Notifications ────────────────────────────────────
   getNotifications(): Observable<NotificationDto[]> { return this.http.get<NotificationDto[]>(`${this.base}/notifications`); }

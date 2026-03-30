@@ -152,8 +152,16 @@ public class GamificationService : IGamificationService
         var xpSummary = await GetXPSummaryAsync(employeeId);
         var enrollment = await _db.ClassEnrollments.FirstOrDefaultAsync(e => e.EmployeeId == employeeId && e.Status == EnrollmentStatus.Active);
 
-        var allSubs = await _db.Submissions.Where(s => s.EmployeeId == employeeId && s.Status != SubmissionStatus.Draft).ToListAsync();
-        var avgScore = allSubs.Any() ? allSubs.Average(s => (double)(s.TotalFinalScore ?? 0)) : 0;
+        var allSubs = await _db.Submissions
+            .Include(s => s.Task)
+            .Where(s => s.EmployeeId == employeeId && s.Status != SubmissionStatus.Draft)
+            .ToListAsync();
+
+        // Avg score as percentage of total marks for each task
+        var scoredSubs = allSubs.Where(s => s.TotalFinalScore.HasValue && s.Task.TotalMarks > 0).ToList();
+        var avgScore = scoredSubs.Any()
+            ? scoredSubs.Average(s => (double)s.TotalFinalScore!.Value / s.Task.TotalMarks * 100)
+            : 0;
 
         var upcoming = enrollment == null ? [] : await _db.Tasks
             .Where(t => t.ClassId == enrollment.ClassId && t.Status == Domain.Enums.AssignmentStatus.Published && t.StartAt > DateTime.UtcNow)
@@ -162,11 +170,15 @@ public class GamificationService : IGamificationService
             .Select(t => new UpcomingTaskDto(t.Id, t.Title, t.StartAt, t.EndAt, t.TotalMarks))
             .ToListAsync();
 
+        // Total tasks in the class (published or closed)
+        var totalClassTasks = enrollment == null ? 0 : await _db.Tasks
+            .CountAsync(t => t.ClassId == enrollment.ClassId && t.Status != Domain.Enums.AssignmentStatus.Draft);
+
         var badges = (await GetEmployeeBadgesAsync(employeeId)).Take(5).ToList();
 
         return new DashboardStatsDto(
             xpSummary.ClassRank, xpSummary.GlobalRank, xpSummary.TotalXP, xpSummary.CurrentStreak,
-            allSubs.Count + upcoming.Count, allSubs.Count,
+            totalClassTasks, allSubs.Count,
             (decimal)Math.Round(avgScore, 1),
             badges, upcoming);
     }

@@ -44,4 +44,11 @@ public class ReportsController : BaseController
     [HttpGet("admin/system"), Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetSystemReport()
         => Ok(await _reports.GetSystemReportAsync());
+
+    [HttpGet("task/{taskId:guid}/export"), Authorize(Roles = "Admin,Trainer")]
+    public async Task<IActionResult> ExportTaskResultsGrid(Guid taskId)
+    {
+        var bytes = await _reports.ExportTaskResultsGridExcelAsync(taskId);
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "task-results.xlsx");
+    }
 }

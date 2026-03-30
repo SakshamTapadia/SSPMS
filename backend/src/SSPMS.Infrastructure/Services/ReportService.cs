@@ -136,25 +136,187 @@ public class ReportService : IReportService
 
     public async Task<byte[]> ExportClassReportExcelAsync(Guid classId, Guid requesterId, string role)
     {
-        var report = await GetClassReportAsync(classId, requesterId, role);
-        using var wb = new XLWorkbook();
-        var ws = wb.Worksheets.Add("Class Report");
-        ws.Cell("A1").Value = "Task";
-        ws.Cell("B1").Value = "Submissions";
-        ws.Cell("C1").Value = "Avg Raw Score";
-        ws.Cell("D1").Value = "Avg Final Score";
-        ws.Cell("E1").Value = "Not Submitted";
+        var @class = await _db.Classes.Include(c => c.Trainer).FirstOrDefaultAsync(c => c.Id == classId)
+            ?? throw new Exception("Class not found.");
 
-        int row = 2;
-        foreach (var t in report.TaskReports)
+        var enrolledIds = await _db.ClassEnrollments
+            .Include(e => e.Employee)
+            .Where(e => e.ClassId == classId && e.Status == EnrollmentStatus.Active && e.Employee.Role == UserRole.Employee)
+            .Select(e => e.EmployeeId)
+            .ToListAsync();
+
+        var employees = await _db.Users
+            .Where(u => enrolledIds.Contains(u.Id))
+            .OrderBy(u => u.Name)
+            .ToListAsync();
+
+        var tasks = await _db.Tasks
+            .Where(t => t.ClassId == classId)
+            .OrderBy(t => t.StartAt)
+            .ToListAsync();
+
+        var taskIds = tasks.Select(t => t.Id).ToList();
+        var submissions = await _db.Submissions
+            .Where(s => taskIds.Contains(s.TaskId) && s.Status != SubmissionStatus.Draft)
+            .ToListAsync();
+
+        using var wb = new XLWorkbook();
+
+        // ── Sheet 1: Summary ───────────────────────────────────────────────────
+        var ws1 = wb.Worksheets.Add("Summary");
+        ws1.Cell("A1").Value = "Class"; ws1.Cell("B1").Value = @class.Name;
+        ws1.Cell("A2").Value = "Trainer"; ws1.Cell("B2").Value = @class.Trainer.Name;
+        ws1.Cell("A3").Value = "Employees"; ws1.Cell("B3").Value = employees.Count;
+        ws1.Cell("A4").Value = "Tasks"; ws1.Cell("B4").Value = tasks.Count;
+        var allScores = submissions.Where(s => s.TotalFinalScore.HasValue).Select(s => (double)s.TotalFinalScore!.Value).ToList();
+        ws1.Cell("A5").Value = "Overall Avg Score"; ws1.Cell("B5").Value = allScores.Any() ? Math.Round(allScores.Average(), 1) : 0;
+        var totalPossible = tasks.Count * employees.Count;
+        ws1.Cell("A6").Value = "Completion Rate"; ws1.Cell("B6").Value = totalPossible > 0 ? $"{Math.Round((double)submissions.Count / totalPossible * 100, 1)}%" : "0%";
+        ws1.Columns().AdjustToContents();
+
+        // ── Sheet 2: Student × Task Matrix ────────────────────────────────────
+        var ws2 = wb.Worksheets.Add("Student Scores");
+        ws2.Cell(1, 1).Value = "Employee";
+        for (int c = 0; c < tasks.Count; c++)
         {
-            ws.Cell(row, 1).Value = t.TaskTitle;
-            ws.Cell(row, 2).Value = t.SubmittedCount;
-            ws.Cell(row, 3).Value = (double)t.AvgRawScore;
-            ws.Cell(row, 4).Value = (double)t.AvgFinalScore;
-            ws.Cell(row, 5).Value = t.NotSubmittedCount;
-            row++;
+            ws2.Cell(1, c + 2).Value = tasks[c].Title;
+            ws2.Cell(2, c + 2).Value = $"(/ {tasks[c].TotalMarks})";
         }
+        ws2.Cell(1, tasks.Count + 2).Value = "Total";
+        ws2.Cell(1, tasks.Count + 3).Value = "Avg %";
+
+        var subLookup = submissions.ToDictionary(s => (s.EmployeeId, s.TaskId));
+        for (int r = 0; r < employees.Count; r++)
+        {
+            var emp = employees[r];
+            ws2.Cell(r + 3, 1).Value = emp.Name;
+            double totalScore = 0; int totalMaxScore = 0;
+            for (int c = 0; c < tasks.Count; c++)
+            {
+                if (subLookup.TryGetValue((emp.Id, tasks[c].Id), out var sub))
+                {
+                    var score = (double)(sub.TotalFinalScore ?? sub.TotalRawScore ?? 0);
+                    ws2.Cell(r + 3, c + 2).Value = score;
+                    totalScore += score; totalMaxScore += tasks[c].TotalMarks;
+                }
+                else
+                {
+                    ws2.Cell(r + 3, c + 2).Value = "—";
+                }
+            }
+            ws2.Cell(r + 3, tasks.Count + 2).Value = totalScore;
+            ws2.Cell(r + 3, tasks.Count + 3).Value = totalMaxScore > 0 ? $"{Math.Round(totalScore / totalMaxScore * 100, 1)}%" : "—";
+        }
+
+        // Task averages row
+        int avgRow = employees.Count + 3;
+        ws2.Cell(avgRow, 1).Value = "Class Average";
+        for (int c = 0; c < tasks.Count; c++)
+        {
+            var taskSubs = submissions.Where(s => s.TaskId == tasks[c].Id && s.TotalFinalScore.HasValue).ToList();
+            ws2.Cell(avgRow, c + 2).Value = taskSubs.Any() ? Math.Round(taskSubs.Average(s => (double)s.TotalFinalScore!.Value), 1) : 0;
+        }
+        ws2.Columns().AdjustToContents();
+
+        // ── Sheet 3: Task Breakdown ────────────────────────────────────────────
+        var ws3 = wb.Worksheets.Add("Task Breakdown");
+        ws3.Cell(1, 1).Value = "Task"; ws3.Cell(1, 2).Value = "Total Marks";
+        ws3.Cell(1, 3).Value = "Submitted"; ws3.Cell(1, 4).Value = "Not Submitted";
+        ws3.Cell(1, 5).Value = "Avg Raw Score"; ws3.Cell(1, 6).Value = "Avg Final Score";
+        ws3.Cell(1, 7).Value = "Completion %";
+        for (int r = 0; r < tasks.Count; r++)
+        {
+            var t = tasks[r];
+            var taskSubs = submissions.Where(s => s.TaskId == t.Id).ToList();
+            var notSub = employees.Count - taskSubs.Count;
+            var rawScores = taskSubs.Where(s => s.TotalRawScore.HasValue).Select(s => (double)s.TotalRawScore!.Value).ToList();
+            var finScores = taskSubs.Where(s => s.TotalFinalScore.HasValue).Select(s => (double)s.TotalFinalScore!.Value).ToList();
+            ws3.Cell(r + 2, 1).Value = t.Title;
+            ws3.Cell(r + 2, 2).Value = t.TotalMarks;
+            ws3.Cell(r + 2, 3).Value = taskSubs.Count;
+            ws3.Cell(r + 2, 4).Value = notSub;
+            ws3.Cell(r + 2, 5).Value = rawScores.Any() ? Math.Round(rawScores.Average(), 1) : 0;
+            ws3.Cell(r + 2, 6).Value = finScores.Any() ? Math.Round(finScores.Average(), 1) : 0;
+            ws3.Cell(r + 2, 7).Value = employees.Count > 0 ? $"{Math.Round((double)taskSubs.Count / employees.Count * 100, 1)}%" : "0%";
+        }
+        ws3.Columns().AdjustToContents();
+
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        return ms.ToArray();
+    }
+
+    public async Task<byte[]> ExportTaskResultsGridExcelAsync(Guid taskId)
+    {
+        var task = await _db.Tasks
+            .Include(t => t.Questions).ThenInclude(q => q.Options)
+            .Include(t => t.Class)
+            .FirstOrDefaultAsync(t => t.Id == taskId)
+            ?? throw new Exception("Task not found.");
+
+        var submissions = await _db.Submissions
+            .Include(s => s.Answers)
+            .Include(s => s.Employee)
+            .Where(s => s.TaskId == taskId && s.Status != SubmissionStatus.Draft)
+            .OrderBy(s => s.SubmissionRank ?? int.MaxValue)
+            .ToListAsync();
+
+        var questions = task.Questions.OrderBy(q => q.OrderIndex).ToList();
+
+        using var wb = new XLWorkbook();
+        var ws = wb.Worksheets.Add("Results Grid");
+
+        // Header row
+        ws.Cell(1, 1).Value = "Rank";
+        ws.Cell(1, 2).Value = "Student";
+        ws.Cell(1, 3).Value = "Status";
+        ws.Cell(1, 4).Value = "Raw Score";
+        ws.Cell(1, 5).Value = "Final Score";
+        ws.Cell(1, 6).Value = "Multiplier";
+        ws.Cell(1, 7).Value = "Accuracy %";
+        for (int c = 0; c < questions.Count; c++)
+            ws.Cell(1, c + 8).Value = $"Q{c + 1} ({questions[c].Marks}m)";
+
+        // Style header
+        var headerRange = ws.Range(1, 1, 1, 7 + questions.Count);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#4f46e5");
+        headerRange.Style.Font.FontColor = XLColor.White;
+
+        // Data rows
+        for (int r = 0; r < submissions.Count; r++)
+        {
+            var sub = submissions[r];
+            var totalMarks = questions.Sum(q => q.Marks);
+            int rawPts = 0;
+
+            for (int c = 0; c < questions.Count; c++)
+            {
+                var q = questions[c];
+                var ans = sub.Answers.FirstOrDefault(a => a.QuestionId == q.Id);
+                double score = 0;
+                if (q.Type == Domain.Enums.QuestionType.MCQ && ans != null)
+                {
+                    var correctOpt = q.Options.FirstOrDefault(o => o.IsCorrect);
+                    score = correctOpt != null && ans.AnswerText == correctOpt.Id.ToString() ? q.Marks : 0;
+                }
+                else if (ans?.RawScore != null)
+                    score = (double)ans.RawScore.Value;
+
+                ws.Cell(r + 2, c + 8).Value = score;
+                rawPts += (int)score;
+            }
+
+            var accuracy = totalMarks > 0 ? Math.Round((double)rawPts / totalMarks * 100, 1) : 0;
+            ws.Cell(r + 2, 1).Value = sub.SubmissionRank ?? r + 1;
+            ws.Cell(r + 2, 2).Value = sub.Employee?.Name ?? "Unknown";
+            ws.Cell(r + 2, 3).Value = sub.Status.ToString();
+            ws.Cell(r + 2, 4).Value = (double)(sub.TotalRawScore ?? rawPts);
+            ws.Cell(r + 2, 5).Value = (double)(sub.TotalFinalScore ?? 0);
+            ws.Cell(r + 2, 6).Value = (double)(sub.Multiplier ?? 1);
+            ws.Cell(r + 2, 7).Value = accuracy;
+        }
+
         ws.Columns().AdjustToContents();
 
         using var ms = new MemoryStream();

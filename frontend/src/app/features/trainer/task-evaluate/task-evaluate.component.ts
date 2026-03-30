@@ -132,4 +132,10 @@ export class TaskEvaluateComponent implements OnInit {
     if (!confirm('Mark all submitted as evaluated?')) return;
     this.api.bulkCompleteEvaluation(this.taskId).subscribe({ next: () => { this.snack.open('All marked evaluated!', 'OK', { duration: 3000 }); this.api.getTaskSubmissions(this.taskId).subscribe(s => this.submissions = s); } });
   }
+
+  exportGridExcel(): void {
+    this.api.exportTaskResultsGridExcel(this.taskId).subscribe(blob =>
+      this.api.downloadBlob(blob, `task-results.xlsx`)
+    );
+  }
 }

@@ -42,9 +42,9 @@ public record DashboardStatsDto(
     int TotalXP,
     int CurrentStreak,
     int TotalTasks,
-    int SubmittedTasks,
-    decimal AverageScore,
-    IEnumerable<EmployeeBadgeDto> LatestBadges,
+    int CompletedTasks,
+    decimal AvgScore,
+    IEnumerable<EmployeeBadgeDto> RecentBadges,
     IEnumerable<UpcomingTaskDto> UpcomingTasks
 );
 

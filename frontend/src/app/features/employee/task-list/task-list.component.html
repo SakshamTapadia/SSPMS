@@ -44,10 +44,17 @@
       </span>
     </div>
     <div class="task-card-footer">
-      <a class="btn btn--ghost btn--sm" [routerLink]="['/employee/tasks', t.id, 'result']">Results</a>
+      <a class="btn btn--primary btn--sm" *ngIf="isEvaluated(t)"
+         [routerLink]="['/employee/tasks', t.id, 'result']">
+        <mat-icon style="font-size:14px;width:14px;height:14px;vertical-align:middle">open_in_new</mat-icon> View Results
+      </a>
+      <a class="btn btn--ghost btn--sm" *ngIf="hasResult(t) && !isEvaluated(t)"
+         [routerLink]="['/employee/tasks', t.id, 'result']">Results (Pending)</a>
+      <a class="btn btn--ghost btn--sm" *ngIf="!hasResult(t)"
+         [routerLink]="['/employee/tasks', t.id, 'result']">Results</a>
       <a class="btn btn--primary btn--sm" *ngIf="canAttempt(t)"
          [routerLink]="['/employee/tasks', t.id, 'attempt']">Start Task</a>
-      <button class="btn btn--ghost btn--sm" *ngIf="!canAttempt(t)" disabled>{{ hasSubmitted(t) ? 'Submitted' : buttonLabel(t) }}</button>
+      <button class="btn btn--ghost btn--sm" *ngIf="!canAttempt(t) && !hasResult(t)" disabled>{{ buttonLabel(t) }}</button>
     </div>
   </div>
 </div>

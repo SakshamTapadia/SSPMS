@@ -10,24 +10,32 @@ export class TaskListComponent implements OnInit {
 
   constructor(private api: ApiService) {}
 
+  submissionStatus = new Map<string, string>(); // taskId → 'Draft'|'Submitted'|'Evaluated'
+
   ngOnInit(): void {
     this.api.getMyTasks().subscribe({
       next: tasks => {
         this.tasks = tasks;
-        // For each open task, check if already submitted so we hide the Start Task button
+        // Check submission status for all tasks to properly show results links and disable buttons
         tasks.forEach(t => {
-          if (this.isOpen(t)) {
-            this.api.getMySubmission(t.id).subscribe({
-              next: sub => { if (sub?.status && sub.status !== 'Draft') this.submittedTaskIds.add(t.id); },
-              error: () => {} // 404 means no submission yet — fine
-            });
-          }
+          this.api.getMySubmission(t.id).subscribe({
+            next: sub => {
+              if (sub?.status) {
+                this.submissionStatus.set(t.id, sub.status);
+                if (sub.status !== 'Draft') this.submittedTaskIds.add(t.id);
+              }
+            },
+            error: () => {} // 404 = no submission yet
+          });
         });
         this.loading = false;
       },
       error: () => this.loading = false
     });
   }
+
+  hasResult(t: TaskDto): boolean { return this.submissionStatus.has(t.id) && this.submissionStatus.get(t.id) !== 'Draft'; }
+  isEvaluated(t: TaskDto): boolean { return this.submissionStatus.get(t.id) === 'Evaluated'; }
 
   isOpen(t: TaskDto): boolean { const now = new Date(); return new Date(t.startAt) <= now && now <= new Date(t.endAt); }
   isNotStarted(t: TaskDto): boolean { return new Date(t.startAt) > new Date(); }

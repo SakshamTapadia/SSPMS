@@ -30,15 +30,6 @@
     <div class="stat-card">
       <div class="flex justify-between items-center">
         <div>
-          <div class="stat-label">Day Streak</div>
-          <div class="stat-value">{{ stats.currentStreak }}</div>
-        </div>
-        <div class="stat-icon success"><mat-icon>local_fire_department</mat-icon></div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="flex justify-between items-center">
-        <div>
           <div class="stat-label">Avg Score</div>
           <div class="stat-value">{{ stats.avgScore | number:'1.1-1' }}%</div>
         </div>
@@ -103,9 +94,12 @@
         <p>Complete tasks early and score high to earn badges</p>
       </div>
       <div class="badge-grid" *ngIf="stats.recentBadges?.length">
-        <div class="badge-item" *ngFor="let b of stats.recentBadges" [matTooltip]="b.description">
-          <div class="badge-icon-wrap" [style.background]="badgeGradient(b.name)">
+        <div class="badge-item" *ngFor="let b of stats.recentBadges"
+             [matTooltip]="b.name + ': ' + b.description + (b.count > 1 ? ' (×' + b.count + ')' : '')">
+          <div class="badge-medal" [style.--badge-gradient]="badgeGradient(b.name)">
+            <div class="badge-shine"></div>
             <mat-icon class="badge-icon">{{ badgeIcon(b.name) }}</mat-icon>
+            <span class="badge-count" *ngIf="b.count > 1">×{{ b.count }}</span>
           </div>
           <span class="badge-name">{{ b.name }}</span>
         </div>

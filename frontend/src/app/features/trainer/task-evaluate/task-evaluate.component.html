@@ -157,6 +157,9 @@
       <div class="grid-toolbar">
         <div class="grid-sort-row">
           <span class="sort-label">Sort by:</span>
+          <button class="sort-btn" (click)="exportGridExcel()" style="margin-left:auto;color:var(--c-primary);border:1px solid var(--c-primary)">
+            <mat-icon style="font-size:15px;width:15px;height:15px;vertical-align:middle;margin-right:4px">download</mat-icon>Export Excel
+          </button>
           <button class="sort-btn" [class.active]="sortBy === 'accuracy'" (click)="toggleSort('accuracy')">
             Accuracy <mat-icon *ngIf="sortBy === 'accuracy'">{{ sortAsc ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
           </button>

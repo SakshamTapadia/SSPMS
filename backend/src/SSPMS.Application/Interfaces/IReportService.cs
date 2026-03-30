@@ -10,4 +10,5 @@ public interface IReportService
     Task<byte[]> ExportClassReportPdfAsync(Guid classId, Guid requesterId, string role);
     Task<byte[]> ExportClassReportExcelAsync(Guid classId, Guid requesterId, string role);
     Task<byte[]> ExportEmployeeReportPdfAsync(Guid employeeId, Guid requesterId, string role);
+    Task<byte[]> ExportTaskResultsGridExcelAsync(Guid taskId);
 }
