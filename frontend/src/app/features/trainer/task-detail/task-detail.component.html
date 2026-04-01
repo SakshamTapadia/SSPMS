@@ -259,9 +259,12 @@ Answer: D</pre>
           </mat-form-field>
 
           <!-- Image upload -->
-          <div class="image-upload-block" *ngIf="imageUploadAvailable">
+          <div class="image-upload-block">
             <div class="image-upload-row">
-              <button mat-stroked-button type="button" (click)="imgInput.click()" [disabled]="uploadingImage">
+              <button mat-stroked-button type="button"
+                      (click)="imgInput.click()"
+                      [disabled]="uploadingImage || !imageUploadAvailable"
+                      [matTooltip]="!imageUploadAvailable ? 'Image upload is not configured on this server' : ''">
                 <mat-spinner *ngIf="uploadingImage" diameter="16" style="display:inline-block;margin-right:6px"></mat-spinner>
                 <mat-icon *ngIf="!uploadingImage">image</mat-icon>
                 {{ uploadingImage ? 'Uploading…' : (imagePreview ? 'Replace Image' : 'Attach Image') }}
