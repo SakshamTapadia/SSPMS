@@ -16,8 +16,25 @@ export class AuthService {
   constructor(private http: HttpClient, private router: Router) {}
 
   get currentUser(): UserProfile | null { return this._user$.value; }
-  get role(): string { return this._user$.value?.role ?? ''; }
+  get role(): string { return this.decodeTokenRole() || (this._user$.value?.role ?? ''); }
   get userId(): string { return this._user$.value?.id ?? ''; }
+
+  // Decode the role claim directly from the signed JWT payload.
+  // The JWT is HMAC-SHA256 signed by the server; its payload cannot be silently
+  // altered without invalidating the signature, making it tamper-evident.
+  // .NET's JwtSecurityTokenHandler maps ClaimTypes.Role → "role" by default.
+  private decodeTokenRole(): string {
+    const token = this.getAccessToken();
+    if (!token) return '';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload['role']
+        ?? payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role']
+        ?? '';
+    } catch {
+      return '';
+    }
+  }
 
   register(req: { name: string; email: string; password: string }): Observable<AuthCheckResponse> {
     return this.http.post<AuthCheckResponse>(`${this.API}/register`, req);

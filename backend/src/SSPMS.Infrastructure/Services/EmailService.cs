@@ -27,7 +27,11 @@ public class EmailService : IEmailService
         message.Body = new TextPart("html") { Text = WrapTemplate(subject, htmlBody) };
 
         using var client = new SmtpClient();
-        using var mainCts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(45));
+        // Keep total SMTP budget well under Render's / typical reverse-proxy 30 s request
+        // timeout.  Cloud providers (Render, Railway, Fly…) often silently drop TCP
+        // connections to port 587 / 465, so each attempt must fail quickly rather than
+        // stalling the HTTP response until the proxy kills it with a 503.
+        using var mainCts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(12));
 
         // Try configured port first, then fall back. Each connection attempt gets its own
         // short timeout so a silently-dropped port (e.g. 465 on cloud hosts) can't starve
@@ -42,7 +46,7 @@ public class EmailService : IEmailService
         foreach (var (p, mode) in portModes)
         {
             using var connectCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(mainCts.Token);
-            connectCts.CancelAfter(TimeSpan.FromSeconds(12));
+            connectCts.CancelAfter(TimeSpan.FromSeconds(4));
             try
             {
                 if (client.IsConnected) await client.DisconnectAsync(false);

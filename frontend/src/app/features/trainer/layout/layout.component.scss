@@ -224,6 +224,8 @@
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.45);
   z-index: 99;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   animation: fadeIn 0.2s ease both;
   &.open { display: block; }
 }
@@ -239,6 +241,7 @@
     transform: translateX(-100%);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 100;
+    animation: none;
     &.open { transform: translateX(0); box-shadow: 8px 0 40px rgba(0,0,0,0.35); }
   }
 

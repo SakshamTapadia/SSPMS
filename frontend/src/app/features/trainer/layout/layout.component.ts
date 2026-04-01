@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
@@ -8,16 +8,14 @@ import { MatDialog } from '@angular/material/dialog';
 import { UserProfile } from '../../../core/models';
 import { ChangePasswordDialogComponent } from '../../../shared/components/change-password-dialog/change-password-dialog.component';
 import { NotificationsDialogComponent } from '../../../shared/components/notifications-dialog/notifications-dialog.component';
-import { SwitchToAdminDialogComponent } from '../../../shared/components/switch-to-admin-dialog/switch-to-admin-dialog.component';
-import { Router } from '@angular/router';
 
 @Component({ selector: 'app-layout', standalone: false, templateUrl: './layout.component.html', styleUrl: './layout.component.scss' })
-export class LayoutComponent implements OnInit {
+export class LayoutComponent implements OnInit, OnDestroy {
   unreadCount = 0;
   sidebarOpen = false;
   user$: Observable<UserProfile | null>;
 
-  constructor(public auth: AuthService, private api: ApiService, private signalR: SignalRService, private snack: MatSnackBar, private dialog: MatDialog, private router: Router) {
+  constructor(public auth: AuthService, private api: ApiService, private signalR: SignalRService, private snack: MatSnackBar, private dialog: MatDialog) {
     this.user$ = auth.user$;
   }
 
@@ -30,13 +28,14 @@ export class LayoutComponent implements OnInit {
 
   openNotifications(): void { this.dialog.open(NotificationsDialogComponent, { width: '420px' }); }
 
-  switchToAdmin(): void {
-    const email = this.auth.currentUser?.email ?? '';
-    this.dialog.open(SwitchToAdminDialogComponent, { width: '440px', data: email })
-      .afterClosed().subscribe(confirmed => { if (confirmed) this.router.navigate(['/admin/dashboard']); });
-  }
-
   logout(): void { this.auth.logout(); }
-  toggleSidebar(): void { this.sidebarOpen = !this.sidebarOpen; }
-  closeSidebar(): void { this.sidebarOpen = false; }
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+    document.body.style.overflow = this.sidebarOpen ? 'hidden' : '';
+  }
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+    document.body.style.overflow = '';
+  }
+  ngOnDestroy(): void { document.body.style.overflow = ''; }
 }

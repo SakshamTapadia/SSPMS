@@ -7,7 +7,7 @@ export class AuthGuard implements CanActivate, CanActivateChild {
   constructor(private auth: AuthService, private router: Router) {}
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-    if (!this.auth.currentUser) {
+    if (!this.auth.currentUser || !this.auth.getAccessToken()) {
       this.router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
       return false;
     }

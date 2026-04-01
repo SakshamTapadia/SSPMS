@@ -146,7 +146,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.resendLoading = true;
     this.auth.resendVerification(this.pendingEmail).subscribe({
       next: () => { this.resendLoading = false; this.snack.open('Code resent!', 'OK', { duration: 3000 }); },
-      error: () => { this.resendLoading = false; }
+      error: (e) => { this.resendLoading = false; this.snack.open(e?.error?.message ?? 'Failed to resend code. Please try again.', 'Close', { duration: 4000 }); }
     });
   }
 

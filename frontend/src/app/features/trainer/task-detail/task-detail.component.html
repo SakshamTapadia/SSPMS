@@ -118,23 +118,28 @@
             {{ importing ? 'Importing…' : 'Import from PDF/DOCX' }}
           </button>
           <input #importInput type="file" accept=".pdf,.docx" style="display:none" (change)="importFromDocument($event)">
-          <button mat-icon-button matTooltip="View required format & download template" (click)="showImportSchema = !showImportSchema">
-            <mat-icon>help_outline</mat-icon>
+          <button mat-icon-button [matTooltip]="showImportSchema ? 'Close help' : 'View required format & download template'"
+                  (click)="showImportSchema = !showImportSchema" [color]="showImportSchema ? 'warn' : ''">
+            <mat-icon>{{ showImportSchema ? 'close' : 'help_outline' }}</mat-icon>
           </button>
         </div>
+      </div>
 
-        <!-- Import schema info panel -->
-        <div class="import-schema-panel" *ngIf="showImportSchema">
-          <div class="schema-header">
-            <mat-icon color="primary">description</mat-icon>
-            <strong>Required Document Format</strong>
-            <span class="spacer"></span>
-            <button mat-stroked-button (click)="downloadTemplate()">
-              <mat-icon>download</mat-icon> Download Template
-            </button>
-          </div>
-          <p class="schema-desc">Each question block must follow this exact structure:</p>
-          <pre class="schema-pre">1. Question text goes here
+      <!-- Import schema info panel (outside qs-header to avoid flex distortion) -->
+      <div class="import-schema-panel" *ngIf="showImportSchema">
+        <div class="schema-header">
+          <mat-icon color="primary">description</mat-icon>
+          <strong>Required Document Format</strong>
+          <span class="spacer"></span>
+          <button mat-stroked-button (click)="downloadTemplate()">
+            <mat-icon>download</mat-icon> Download Template
+          </button>
+          <button mat-icon-button matTooltip="Close" (click)="showImportSchema = false">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <p class="schema-desc">Each question block must follow this exact structure:</p>
+        <pre class="schema-pre">1. Question text goes here
 A) First option
 B) Second option
 C) Third option
@@ -147,14 +152,13 @@ B) Option two
 C) Option three
 D) Option four
 Answer: D</pre>
-          <ul class="schema-rules">
-            <li>Questions must be numbered: <code>1.</code> or <code>1)</code></li>
-            <li>Options must be prefixed: <code>A)</code> <code>B)</code> <code>C)</code> <code>D)</code></li>
-            <li>Answer line must be: <code>Answer: B</code> (the letter of the correct option)</li>
-            <li>Minimum 2 options per question, maximum 4</li>
-            <li>Only MCQ questions are imported — other types must be added manually</li>
-          </ul>
-        </div>
+        <ul class="schema-rules">
+          <li>Questions must be numbered: <code>1.</code> or <code>1)</code></li>
+          <li>Options must be prefixed: <code>A)</code> <code>B)</code> <code>C)</code> <code>D)</code></li>
+          <li>Answer line must be: <code>Answer: B</code> (the letter of the correct option)</li>
+          <li>Minimum 2 options per question, maximum 4</li>
+          <li>Only MCQ questions are imported — other types must be added manually</li>
+        </ul>
       </div>
 
       <!-- Empty state -->
@@ -184,7 +188,7 @@ Answer: D</pre>
           </div>
           <div class="q-lang" *ngIf="q.type === 'Code'">
             <mat-icon style="font-size:14px;width:14px;height:14px;vertical-align:middle">code</mat-icon>
-            {{ q.language }}
+            Allowed: {{ q.language ? q.language.split(',').join(', ') : 'Any' }}
           </div>
           <div class="q-options" *ngIf="q.type === 'MCQ' && q.options">
             <div class="option-preview" *ngFor="let opt of q.options" [class.correct]="opt.isCorrect">
@@ -218,10 +222,10 @@ Answer: D</pre>
               <input matInput type="number" formControlName="marks" min="1">
             </mat-form-field>
 
-            <mat-form-field appearance="outline" style="min-width:140px"
+            <mat-form-field appearance="outline" style="min-width:200px"
                             *ngIf="qForm.get('type')?.value === 'Code'">
-              <mat-label>Language</mat-label>
-              <mat-select formControlName="language">
+              <mat-label>Allowed Languages</mat-label>
+              <mat-select formControlName="language" [multiple]="true">
                 <mat-option *ngFor="let l of languages" [value]="l">{{ l }}</mat-option>
               </mat-select>
             </mat-form-field>

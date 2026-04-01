@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { switchMap, map } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { ClassDto, UserDto, TaskDto } from '../../../core/models';
 
 @Component({
@@ -43,6 +45,7 @@ export class ClassDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private api: ApiService,
+    private auth: AuthService,
     private fb: FormBuilder,
     private snack: MatSnackBar
   ) {
@@ -153,7 +156,17 @@ export class ClassDetailComponent implements OnInit {
     if (this.addForm.invalid || !this.cls) return;
     this.adding = true;
     const v = this.addForm.value;
-    this.api.createEmployeeByTrainer({ name: v.name, email: v.email, role: 'Employee', password: v.password, classId: this.cls!.id }).subscribe({
+    const classId = this.cls!.id;
+
+    // Admin: POST /users (Admin-only) then POST /classes/{id}/enroll (Admin+Trainer)
+    // Trainer: POST /users/trainer/employees (Trainer-only, creates + enrolls in one call)
+    const create$ = this.auth.role === 'Admin'
+      ? this.api.createUser({ name: v.name, email: v.email, role: 'Employee', password: v.password }).pipe(
+          switchMap(user => this.api.enrollEmployee(classId, user.id).pipe(map(() => user)))
+        )
+      : this.api.createEmployeeByTrainer({ name: v.name, email: v.email, role: 'Employee', password: v.password, classId });
+
+    create$.subscribe({
       next: user => {
         this.employees = [...this.employees, user];
         this.snack.open(`${user.name} created and added.`, '', { duration: 2500 });
@@ -161,7 +174,7 @@ export class ClassDetailComponent implements OnInit {
         this.adding = false;
       },
       error: err => {
-        this.snack.open(err?.error?.message ?? 'Failed to create employee.', '', { duration: 3000 });
+        this.snack.open(err?.error?.message ?? 'Failed to create employee.', 'Close', { duration: 4000 });
         this.adding = false;
       }
     });

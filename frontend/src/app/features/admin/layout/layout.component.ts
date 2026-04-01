@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -6,7 +6,7 @@ import { UserProfile } from '../../../core/models';
 import { ChangePasswordDialogComponent } from '../../../shared/components/change-password-dialog/change-password-dialog.component';
 
 @Component({ selector: 'app-layout', standalone: false, templateUrl: './layout.component.html', styleUrl: './layout.component.scss' })
-export class LayoutComponent {
+export class LayoutComponent implements OnDestroy {
   sidebarOpen = false;
   user$: Observable<UserProfile | null>;
 
@@ -17,6 +17,13 @@ export class LayoutComponent {
   openChangePassword(): void { this.dialog.open(ChangePasswordDialogComponent, { width: '420px' }); }
 
   logout(): void { this.auth.logout(); }
-  toggleSidebar(): void { this.sidebarOpen = !this.sidebarOpen; }
-  closeSidebar(): void { this.sidebarOpen = false; }
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+    document.body.style.overflow = this.sidebarOpen ? 'hidden' : '';
+  }
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+    document.body.style.overflow = '';
+  }
+  ngOnDestroy(): void { document.body.style.overflow = ''; }
 }

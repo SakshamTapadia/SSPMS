@@ -61,7 +61,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
       type: ['MCQ', Validators.required],
       stem: ['', Validators.required],
       marks: [10, [Validators.required, Validators.min(1)]],
-      language: ['javascript'],
+      language: [['javascript']],
       options: this.fb.array([])
     });
   }
@@ -199,7 +199,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
   openAddQuestion(): void {
     this.editingQId = '';
     this.clearOptions();
-    this.qForm.reset({ type: 'MCQ', stem: '', marks: 10, language: 'javascript' });
+    this.qForm.reset({ type: 'MCQ', stem: '', marks: 10, language: ['javascript'] });
     this.addOption(); this.addOption(); this.addOption(); this.addOption();
     this.showQForm = true;
     setTimeout(() => document.querySelector('.q-form-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
@@ -208,13 +208,14 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
   openEditQuestion(q: QuestionDto): void {
     this.editingQId = q.id;
     this.clearOptions();
-    this.qForm.patchValue({ type: q.type, stem: q.stem, marks: q.marks, language: q.language ?? 'javascript' });
+    this.qForm.patchValue({ type: q.type, stem: q.stem, marks: q.marks, language: q.language ? q.language.split(',').map((l: string) => l.trim()) : ['javascript'] });
     if (q.type === 'MCQ' && q.options?.length) {
       q.options.forEach(o => this.optionsArray.push(this.fb.group({ optionText: [o.optionText, Validators.required], isCorrect: [o.isCorrect ?? false] })));
     } else if (q.type === 'MCQ') {
       this.addOption(); this.addOption();
     }
     this.showQForm = true;
+    setTimeout(() => document.querySelector('.q-form-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }
 
   closeQForm(): void { this.showQForm = false; this.editingQId = ''; }
@@ -238,7 +239,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
       stem: v.stem,
       marks: +v.marks,
       orderIndex: existingQ?.orderIndex ?? this.questions.length + 1,
-      language: v.type === 'Code' ? v.language : undefined,
+      language: v.type === 'Code' ? (Array.isArray(v.language) ? v.language.join(',') : v.language) : undefined,
       options: v.type === 'MCQ' ? v.options : undefined
     };
 

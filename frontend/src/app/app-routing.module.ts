@@ -12,18 +12,21 @@ const routes: Routes = [
     path: 'admin',
     loadChildren: () => import('./features/admin/admin.module').then(m => m.AdminModule),
     canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
     data: { roles: ['Admin'] }
   },
   {
     path: 'trainer',
     loadChildren: () => import('./features/trainer/trainer.module').then(m => m.TrainerModule),
     canActivate: [AuthGuard],
-    data: { roles: ['Admin', 'Trainer'] }
+    canActivateChild: [AuthGuard],
+    data: { roles: ['Trainer'] }
   },
   {
     path: 'employee',
     loadChildren: () => import('./features/employee/employee.module').then(m => m.EmployeeModule),
     canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
     data: { roles: ['Employee'] }
   },
   { path: 'unauthorized', loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule) },

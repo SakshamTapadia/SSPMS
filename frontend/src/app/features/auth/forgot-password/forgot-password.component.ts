@@ -22,7 +22,14 @@ export class ForgotPasswordComponent {
       },
       error: (e) => {
         this.loading = false;
-        const msg = e?.error?.message ?? 'Failed to send OTP. Check your email address and try again.';
+        let msg: string;
+        if (e?.status === 503 || e?.status === 0) {
+          msg = 'Server is starting up — please wait 30 seconds and try again.';
+        } else if (e?.status === 500) {
+          msg = 'Email service is temporarily unavailable. Please try again in a few minutes.';
+        } else {
+          msg = e?.error?.message ?? 'Failed to send OTP. Check your email address and try again.';
+        }
         this.snack.open(msg, 'Close', { duration: 7000 });
       }
     });

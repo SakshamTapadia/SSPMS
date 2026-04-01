@@ -107,7 +107,7 @@
 
           <!-- Code -->
           <div *ngIf="q.type === 'Code'">
-            <div class="code-lang">Language: <strong>{{ q.language || 'Any' }}</strong></div>
+            <div class="code-lang">Allowed Languages: <strong>{{ q.language ? q.language.split(',').join(', ') : 'Any' }}</strong></div>
             <textarea class="code-editor" [(ngModel)]="answers[q.id]" placeholder="Write your solution here..." rows="15" spellcheck="false"></textarea>
           </div>
 
