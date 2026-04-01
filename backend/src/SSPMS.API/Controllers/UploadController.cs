@@ -28,6 +28,11 @@ public class UploadController : BaseController
     public UploadController(IServiceProvider sp)
         => _images = sp.GetService<IImageService>();
 
+    [HttpGet("image/status")]
+    [AllowAnonymous]
+    public IActionResult GetImageUploadStatus()
+        => Ok(new { available = _images != null });
+
     [HttpPost("image")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(MaxBytes)]

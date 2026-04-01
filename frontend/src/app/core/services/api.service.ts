@@ -83,6 +83,7 @@ export class ApiService {
     form.append('file', file, file.name);
     return this.http.post<QuestionDto[]>(`${this.base}/tasks/${taskId}/questions/import`, form);
   }
+  checkImageUpload(): Observable<{ available: boolean }> { return this.http.get<{ available: boolean }>(`${this.base}/upload/image/status`); }
   uploadImage(file: File): Observable<{ imageUrl: string }> {
     const form = new FormData();
     form.append('file', file, file.name);

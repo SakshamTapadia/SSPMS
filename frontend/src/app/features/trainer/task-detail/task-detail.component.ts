@@ -34,6 +34,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
   showImportSchema = false;
   uploadingImage = false;
   imagePreview: string | null = null;
+  imageUploadAvailable = false;
 
   get totalMarks(): number { return this.questions.reduce((s, q) => s + q.marks, 0); }
   get optionsArray(): FormArray { return this.qForm.get('options') as FormArray; }
@@ -73,6 +74,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.api.getClasses().subscribe({ next: c => this.classes = c, error: () => {} });
+    this.api.checkImageUpload().subscribe({ next: r => this.imageUploadAvailable = r.available, error: () => {} });
 
     // Use paramMap observable so Angular doesn't get stuck when navigating
     // from /tasks/new → /tasks/:id (same component, route reused)

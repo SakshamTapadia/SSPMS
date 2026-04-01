@@ -259,7 +259,7 @@ Answer: D</pre>
           </mat-form-field>
 
           <!-- Image upload -->
-          <div class="image-upload-block">
+          <div class="image-upload-block" *ngIf="imageUploadAvailable">
             <div class="image-upload-row">
               <button mat-stroked-button type="button" (click)="imgInput.click()" [disabled]="uploadingImage">
                 <mat-spinner *ngIf="uploadingImage" diameter="16" style="display:inline-block;margin-right:6px"></mat-spinner>
