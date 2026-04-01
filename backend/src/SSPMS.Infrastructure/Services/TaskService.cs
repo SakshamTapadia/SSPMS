@@ -186,7 +186,7 @@ public class TaskService : ITaskService
             .ToListAsync();
 
         return questions.Select(q => new QuestionDto(
-            q.Id, q.TaskId, q.Type, q.Stem, q.Marks, q.OrderIndex, q.Language,
+            q.Id, q.TaskId, q.Type, q.Stem, q.Marks, q.OrderIndex, q.Language, q.ImageUrl,
             q.Type == QuestionType.MCQ ? q.Options.OrderBy(o => o.OrderIndex).Select(o => new MCQOptionDto(o.Id, o.OptionText, o.OrderIndex, includeAnswers ? o.IsCorrect : null)) : null
         ));
     }
@@ -198,7 +198,7 @@ public class TaskService : ITaskService
         if (task.CreatedByTrainerId != trainerId && !await IsAdminAsync(trainerId)) return ServiceResult<QuestionDto>.Failure("Access denied.");
         if (task.Status != Domain.Enums.AssignmentStatus.Draft) return ServiceResult<QuestionDto>.Failure("Cannot edit published task.");
 
-        var question = new Question { TaskId = taskId, Type = request.Type, Stem = request.Stem, Marks = request.Marks, OrderIndex = request.OrderIndex, Language = request.Language, ExpectedOutput = request.ExpectedOutput };
+        var question = new Question { TaskId = taskId, Type = request.Type, Stem = request.Stem, Marks = request.Marks, OrderIndex = request.OrderIndex, Language = request.Language, ExpectedOutput = request.ExpectedOutput, ImageUrl = request.ImageUrl };
 
         if (request.Type == QuestionType.MCQ && request.Options != null)
             foreach (var o in request.Options)
@@ -208,7 +208,7 @@ public class TaskService : ITaskService
         await _db.SaveChangesAsync();
 
         return ServiceResult<QuestionDto>.Success(new QuestionDto(
-            question.Id, question.TaskId, question.Type, question.Stem, question.Marks, question.OrderIndex, question.Language,
+            question.Id, question.TaskId, question.Type, question.Stem, question.Marks, question.OrderIndex, question.Language, question.ImageUrl,
             question.Options.Select(o => new MCQOptionDto(o.Id, o.OptionText, o.OrderIndex, o.IsCorrect))));
     }
 
@@ -226,6 +226,7 @@ public class TaskService : ITaskService
         question.Marks = request.Marks;
         question.Language = request.Language;
         question.ExpectedOutput = request.ExpectedOutput;
+        question.ImageUrl = request.ImageUrl;
 
         if (request.Type == QuestionType.MCQ && request.Options != null)
         {
@@ -235,7 +236,7 @@ public class TaskService : ITaskService
         }
         await _db.SaveChangesAsync();
         await _db.Entry(question).Collection(q => q.Options).LoadAsync();
-        return ServiceResult<QuestionDto>.Success(new QuestionDto(question.Id, question.TaskId, question.Type, question.Stem, question.Marks, question.OrderIndex, question.Language, question.Options.Select(o => new MCQOptionDto(o.Id, o.OptionText, o.OrderIndex, o.IsCorrect))));
+        return ServiceResult<QuestionDto>.Success(new QuestionDto(question.Id, question.TaskId, question.Type, question.Stem, question.Marks, question.OrderIndex, question.Language, question.ImageUrl, question.Options.Select(o => new MCQOptionDto(o.Id, o.OptionText, o.OrderIndex, o.IsCorrect))));
     }
 
     public async Task<ServiceResult> DeleteQuestionAsync(Guid taskId, Guid questionId, Guid trainerId)
@@ -312,7 +313,7 @@ public class TaskService : ITaskService
                 q.Options.Add(new MCQOption { OptionText = options[i], IsCorrect = letter == correct, OrderIndex = i });
             }
             _db.Questions.Add(q);
-            added.Add(new QuestionDto(q.Id, q.TaskId, q.Type, q.Stem, q.Marks, q.OrderIndex, null,
+            added.Add(new QuestionDto(q.Id, q.TaskId, q.Type, q.Stem, q.Marks, q.OrderIndex, null, null,
                 q.Options.Select(o => new MCQOptionDto(o.Id, o.OptionText, o.OrderIndex, o.IsCorrect))));
         }
 

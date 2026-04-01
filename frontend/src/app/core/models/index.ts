@@ -22,8 +22,8 @@ export interface CreateTaskRequest { classId: string; title: string; description
 export interface UpdateTaskRequest { title: string; description?: string; instructions?: string; startAt: string; endAt: string; durationMinutes: number; }
 
 export interface MCQOptionDto { id: string; optionText: string; orderIndex: number; isCorrect?: boolean; }
-export interface QuestionDto { id: string; taskId: string; type: QuestionType; stem: string; marks: number; orderIndex: number; language?: string; options?: MCQOptionDto[]; }
-export interface CreateQuestionRequest { type: QuestionType; stem: string; marks: number; orderIndex: number; language?: string; expectedOutput?: string; options?: { optionText: string; isCorrect: boolean; orderIndex: number; }[]; }
+export interface QuestionDto { id: string; taskId: string; type: QuestionType; stem: string; marks: number; orderIndex: number; language?: string; imageUrl?: string; options?: MCQOptionDto[]; }
+export interface CreateQuestionRequest { type: QuestionType; stem: string; marks: number; orderIndex: number; language?: string; expectedOutput?: string; imageUrl?: string; options?: { optionText: string; isCorrect: boolean; orderIndex: number; }[]; }
 
 // ── Submissions ──────────────────────────────────────────
 export type SubmissionStatus = 'Draft' | 'Submitted' | 'Evaluated';

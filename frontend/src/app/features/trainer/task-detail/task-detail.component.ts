@@ -32,6 +32,8 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
   readonly languages = ['javascript', 'python', 'java', 'csharp', 'cpp', 'sql', 'other'];
   importing = false;
   showImportSchema = false;
+  uploadingImage = false;
+  imagePreview: string | null = null;
 
   get totalMarks(): number { return this.questions.reduce((s, q) => s + q.marks, 0); }
   get optionsArray(): FormArray { return this.qForm.get('options') as FormArray; }
@@ -62,6 +64,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
       stem: ['', Validators.required],
       marks: [10, [Validators.required, Validators.min(1)]],
       language: [['javascript']],
+      imageUrl: [''],
       options: this.fb.array([])
     });
   }
@@ -208,8 +211,9 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
 
   openAddQuestion(): void {
     this.editingQId = '';
+    this.imagePreview = null;
     this.clearOptions();
-    this.qForm.reset({ type: 'MCQ', stem: '', marks: 10, language: ['javascript'] });
+    this.qForm.reset({ type: 'MCQ', stem: '', marks: 10, language: ['javascript'], imageUrl: '' });
     this.addOption(); this.addOption(); this.addOption(); this.addOption();
     this.showQForm = true;
     setTimeout(() => document.querySelector('.q-form-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
@@ -217,8 +221,9 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
 
   openEditQuestion(q: QuestionDto): void {
     this.editingQId = q.id;
+    this.imagePreview = q.imageUrl ?? null;
     this.clearOptions();
-    this.qForm.patchValue({ type: q.type, stem: q.stem, marks: q.marks, language: q.language ? q.language.split(',').map((l: string) => l.trim()) : ['javascript'] });
+    this.qForm.patchValue({ type: q.type, stem: q.stem, marks: q.marks, language: q.language ? q.language.split(',').map((l: string) => l.trim()) : ['javascript'], imageUrl: q.imageUrl ?? '' });
     if (q.type === 'MCQ' && q.options?.length) {
       q.options.forEach(o => this.optionsArray.push(this.fb.group({ optionText: [o.optionText, Validators.required], isCorrect: [o.isCorrect ?? false] })));
     } else if (q.type === 'MCQ') {
@@ -228,7 +233,32 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     setTimeout(() => document.querySelector('.q-form-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }
 
-  closeQForm(): void { this.showQForm = false; this.editingQId = ''; }
+  closeQForm(): void { this.showQForm = false; this.editingQId = ''; this.imagePreview = null; }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.uploadingImage = true;
+    this.api.uploadImage(file).subscribe({
+      next: res => {
+        this.imagePreview = res.imageUrl;
+        this.qForm.patchValue({ imageUrl: res.imageUrl });
+        this.uploadingImage = false;
+        input.value = '';
+      },
+      error: err => {
+        this.snack.open(err?.error?.message ?? 'Image upload failed.', 'Close', { duration: 4000 });
+        this.uploadingImage = false;
+        input.value = '';
+      }
+    });
+  }
+
+  removeImage(): void {
+    this.imagePreview = null;
+    this.qForm.patchValue({ imageUrl: '' });
+  }
 
   addOption(): void { this.optionsArray.push(this.fb.group({ optionText: ['', Validators.required], isCorrect: [false] })); }
   removeOption(i: number): void { if (this.optionsArray.length > 2) this.optionsArray.removeAt(i); }
@@ -250,6 +280,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
       marks: +v.marks,
       orderIndex: existingQ?.orderIndex ?? this.questions.length + 1,
       language: v.type === 'Code' ? (Array.isArray(v.language) ? v.language.join(',') : v.language) : undefined,
+      imageUrl: v.imageUrl || undefined,
       options: v.type === 'MCQ' ? v.options : undefined
     };
 

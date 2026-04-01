@@ -96,6 +96,9 @@
 
         <div class="question-body">
           <p class="stem">{{ q.stem }}</p>
+          <div class="stem-image" *ngIf="q.imageUrl">
+            <img [src]="q.imageUrl" alt="Question image">
+          </div>
 
           <!-- MCQ -->
           <div *ngIf="q.type === 'MCQ'" class="radio-group">

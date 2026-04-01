@@ -203,6 +203,9 @@ Answer: D</pre>
               </button>
             </ng-container>
           </div>
+          <div class="q-image-thumb" *ngIf="q.imageUrl">
+            <img [src]="q.imageUrl" alt="Question image">
+          </div>
           <div class="q-lang" *ngIf="q.type === 'Code'">
             <mat-icon style="font-size:14px;width:14px;height:14px;vertical-align:middle">code</mat-icon>
             Allowed: {{ q.language ? q.language.split(',').join(', ') : 'Any' }}
@@ -254,6 +257,25 @@ Answer: D</pre>
                       placeholder="Enter the question text…"></textarea>
             <mat-error>Question text is required</mat-error>
           </mat-form-field>
+
+          <!-- Image upload -->
+          <div class="image-upload-block">
+            <div class="image-upload-row">
+              <button mat-stroked-button type="button" (click)="imgInput.click()" [disabled]="uploadingImage">
+                <mat-spinner *ngIf="uploadingImage" diameter="16" style="display:inline-block;margin-right:6px"></mat-spinner>
+                <mat-icon *ngIf="!uploadingImage">image</mat-icon>
+                {{ uploadingImage ? 'Uploading…' : (imagePreview ? 'Replace Image' : 'Attach Image') }}
+              </button>
+              <button mat-icon-button color="warn" type="button" *ngIf="imagePreview" (click)="removeImage()" matTooltip="Remove image">
+                <mat-icon>delete</mat-icon>
+              </button>
+              <span class="image-hint">Optional — JPEG, PNG, GIF, HEIC, WebP (max 20 MB)</span>
+            </div>
+            <input #imgInput type="file" accept="image/*,.heic,.heif" style="display:none" (change)="onImageSelected($event)">
+            <div class="image-preview-wrap" *ngIf="imagePreview">
+              <img [src]="imagePreview" alt="Question image" class="image-preview">
+            </div>
+          </div>
 
           <!-- MCQ options builder -->
           <div class="options-builder" *ngIf="qForm.get('type')?.value === 'MCQ'">

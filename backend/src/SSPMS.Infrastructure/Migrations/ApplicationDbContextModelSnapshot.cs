@@ -475,6 +475,9 @@ namespace SSPMS.Infrastructure.Migrations
                     b.Property<string>("ExpectedOutput")
                         .HasColumnType("text");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
                     b.Property<string>("Language")
                         .HasColumnType("text");
 

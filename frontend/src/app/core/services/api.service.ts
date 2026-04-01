@@ -83,6 +83,11 @@ export class ApiService {
     form.append('file', file, file.name);
     return this.http.post<QuestionDto[]>(`${this.base}/tasks/${taskId}/questions/import`, form);
   }
+  uploadImage(file: File): Observable<{ imageUrl: string }> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.post<{ imageUrl: string }>(`${this.base}/upload/image`, form);
+  }
 
   // ── Submissions ─────────────────────────────────────
   startSubmission(taskId: string): Observable<SubmissionDto> { return this.http.post<SubmissionDto>(`${this.base}/submissions`, { taskId }); }

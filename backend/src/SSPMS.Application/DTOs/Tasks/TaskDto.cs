@@ -48,6 +48,7 @@ public record QuestionDto(
     int Marks,
     int OrderIndex,
     string? Language,
+    string? ImageUrl,
     IEnumerable<MCQOptionDto>? Options
 );
 
@@ -65,6 +66,7 @@ public record CreateQuestionRequest(
     int OrderIndex,
     string? Language,
     string? ExpectedOutput,
+    string? ImageUrl,
     IEnumerable<CreateMCQOptionRequest>? Options
 );
 

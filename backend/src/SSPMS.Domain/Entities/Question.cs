@@ -12,6 +12,7 @@ public class Question : BaseEntity
     public int OrderIndex { get; set; }
     public string? Language { get; set; }         // Code: 'csharp' | 'javascript' | 'python'
     public string? ExpectedOutput { get; set; }   // Code: trainer reference only
+    public string? ImageUrl { get; set; }         // Optional image attached to the question stem
 
     // Navigation
     public AssignedTask Task { get; set; } = null!;
