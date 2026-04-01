@@ -29,7 +29,9 @@ public static class DependencyInjection
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddHttpClient();
-        if (!string.IsNullOrWhiteSpace(configuration["Resend:ApiKey"]))
+        if (!string.IsNullOrWhiteSpace(configuration["Brevo:ApiKey"]))
+            services.AddScoped<IEmailService, BrevoEmailService>();
+        else if (!string.IsNullOrWhiteSpace(configuration["Resend:ApiKey"]))
             services.AddScoped<IEmailService, ResendEmailService>();
         else
             services.AddScoped<IEmailService, EmailService>();
