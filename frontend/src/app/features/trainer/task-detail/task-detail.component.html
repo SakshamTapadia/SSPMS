@@ -269,6 +269,7 @@ Answer: D</pre>
               <mat-form-field appearance="outline" class="opt-field">
                 <mat-label>Option {{ i + 1 }}</mat-label>
                 <input matInput formControlName="optionText">
+                <mat-error>Option text is required</mat-error>
               </mat-form-field>
               <button mat-icon-button color="warn" (click)="removeOption(i)" type="button"
                       [disabled]="optionsArray.length <= 2">
@@ -298,7 +299,7 @@ Answer: D</pre>
           <div class="q-form-actions">
             <button mat-button type="button" (click)="closeQForm()">Cancel</button>
             <button mat-raised-button color="primary" type="button"
-                    (click)="saveQuestion()" [disabled]="qForm.invalid || savingQ">
+                    (click)="saveQuestion()" [disabled]="savingQ">
               <mat-spinner *ngIf="savingQ" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
               {{ savingQ ? 'Saving…' : 'Save Question' }}
             </button>

@@ -902,7 +902,7 @@ namespace SSPMS.Infrastructure.Migrations
                     b.HasOne("SSPMS.Domain.Entities.Question", "Question")
                         .WithMany("Answers")
                         .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("SSPMS.Domain.Entities.Submission", "Submission")

@@ -118,7 +118,7 @@ public class ApplicationDbContext : DbContext
             e.HasOne(a => a.Question)
              .WithMany(q => q.Answers)
              .HasForeignKey(a => a.QuestionId)
-             .OnDelete(DeleteBehavior.Restrict);
+             .OnDelete(DeleteBehavior.Cascade);
         });
 
         // RefreshToken
