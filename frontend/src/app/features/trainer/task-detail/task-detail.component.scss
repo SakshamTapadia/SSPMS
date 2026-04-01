@@ -33,6 +33,29 @@
 
 .form-card, .questions-card { margin-bottom: 24px; }
 
+.readonly-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+
+  mat-icon { color: #c2410c; flex-shrink: 0; margin-top: 2px; }
+
+  .readonly-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.875rem;
+
+    strong { color: #9a3412; }
+    span   { color: #7c2d12; line-height: 1.5; }
+  }
+}
+
 .task-form {
   display: flex;
   flex-direction: column;

@@ -15,7 +15,8 @@
     </div>
     <div class="header-actions">
       <button mat-raised-button (click)="saveTask()"
-              [disabled]="taskForm.invalid || saving || (!isNew && !isDraft)">
+              [disabled]="taskForm.invalid || saving || (!isNew && !isDraft)"
+              [matTooltip]="!isNew && !isDraft ? 'Task is ' + task?.status + ' — editing is locked' : ''">
         <mat-spinner *ngIf="saving" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
         {{ saving ? 'Saving…' : (isNew ? 'Create Task' : 'Save Changes') }}
       </button>
@@ -33,6 +34,22 @@
   <!-- Task details form -->
   <mat-card class="form-card">
     <mat-card-content>
+
+      <!-- Read-only notice for Published / Closed tasks -->
+      <div class="readonly-notice" *ngIf="!isNew && task && !isDraft">
+        <mat-icon>{{ task.status === 'Closed' ? 'lock_clock' : 'lock' }}</mat-icon>
+        <div class="readonly-text">
+          <strong>{{ task.status === 'Closed' ? 'Task Closed' : 'Task Published — Read Only' }}</strong>
+          <span *ngIf="task.status === 'Closed'">
+            This task's end date has passed and it has been automatically closed. All fields are locked.
+            To make changes, delete this task and create a new one.
+          </span>
+          <span *ngIf="task.status !== 'Closed'">
+            This task is live and accepting submissions. Task details are locked to protect ongoing attempts.
+          </span>
+        </div>
+      </div>
+
       <form [formGroup]="taskForm" class="task-form">
 
         <mat-form-field appearance="outline" *ngIf="isNew">

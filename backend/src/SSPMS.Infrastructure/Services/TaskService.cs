@@ -229,11 +229,12 @@ public class TaskService : ITaskService
 
         if (request.Type == QuestionType.MCQ && request.Options != null)
         {
-            _db.MCQOptions.RemoveRange(question.Options);
+            question.Options.Clear();
             foreach (var o in request.Options)
                 question.Options.Add(new MCQOption { OptionText = o.OptionText, IsCorrect = o.IsCorrect, OrderIndex = o.OrderIndex });
         }
         await _db.SaveChangesAsync();
+        await _db.Entry(question).Collection(q => q.Options).LoadAsync();
         return ServiceResult<QuestionDto>.Success(new QuestionDto(question.Id, question.TaskId, question.Type, question.Stem, question.Marks, question.OrderIndex, question.Language, question.Options.Select(o => new MCQOptionDto(o.Id, o.OptionText, o.OrderIndex, o.IsCorrect))));
     }
 

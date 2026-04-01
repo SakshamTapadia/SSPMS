@@ -132,8 +132,18 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
 
   saveTask(): void {
     if (this.taskForm.invalid) { this.taskForm.markAllAsTouched(); return; }
-    this.saving = true;
     const v = this.taskForm.getRawValue();
+    if (this.isNew) {
+      const endAt = this.combineDatetime(v.endDate, v.endTime);
+      if (new Date(endAt) < new Date()) {
+        this.snack.open(
+          'End date/time is in the past — the task will be auto-closed immediately after creation. Please set a future end date.',
+          'Close', { duration: 7000 }
+        );
+        return;
+      }
+    }
+    this.saving = true;
     const common = {
       title: v.title,
       description: v.description || undefined,
