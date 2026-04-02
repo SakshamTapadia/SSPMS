@@ -29,7 +29,9 @@ public static class DependencyInjection
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddHttpClient();
-        if (!string.IsNullOrWhiteSpace(configuration["Cloudinary:CloudName"]))
+        if (!string.IsNullOrWhiteSpace(configuration["Cloudinary:CloudName"]) &&
+            !string.IsNullOrWhiteSpace(configuration["Cloudinary:ApiKey"]) &&
+            !string.IsNullOrWhiteSpace(configuration["Cloudinary:ApiSecret"]))
             services.AddScoped<IImageService, CloudinaryImageService>();
         if (!string.IsNullOrWhiteSpace(configuration["Brevo:ApiKey"]))
             services.AddScoped<IEmailService, BrevoEmailService>();

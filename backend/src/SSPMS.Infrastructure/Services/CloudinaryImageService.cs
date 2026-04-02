@@ -16,9 +16,9 @@ public class CloudinaryImageService : IImageService
     public CloudinaryImageService(IHttpClientFactory http, IConfiguration config)
     {
         _http      = http;
-        _cloudName = config["Cloudinary:CloudName"]!;
-        _apiKey    = config["Cloudinary:ApiKey"]!;
-        _apiSecret = config["Cloudinary:ApiSecret"]!;
+        _cloudName = config["Cloudinary:CloudName"]!.Trim();
+        _apiKey    = config["Cloudinary:ApiKey"]!.Trim();
+        _apiSecret = config["Cloudinary:ApiSecret"]!.Trim();
     }
 
     public async Task<string> UploadAsync(Stream imageStream, string fileName, string contentType)
