@@ -274,7 +274,7 @@ Answer: D</pre>
               </button>
               <span class="image-hint">Optional — JPEG, PNG, GIF, HEIC, WebP (max 20 MB)</span>
             </div>
-            <input #imgInput type="file" accept="image/*,.heic,.heif" style="display:none" (change)="onImageSelected($event)">
+            <input #imgInput type="file" accept="image/*,.heic,.heif,.jpeg,.jpg,.png,.gif,.WebP" style="display:none" (change)="onImageSelected($event)">
             <div class="image-preview-wrap" *ngIf="imagePreview">
               <img [src]="imagePreview" alt="Question image" class="image-preview">
             </div>
